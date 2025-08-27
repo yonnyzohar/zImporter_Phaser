@@ -1,0 +1,1 @@
+{"version":3,"file":"ZToggle.d.ts","sourceRoot":"","sources":["../src/ZToggle.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,MAAM,EAAE,MAAM,UAAU,CAAC;AAElC,qBAAa,OAAQ,SAAQ,MAAM;IAE/B,OAAO,CAAC,QAAQ,CAAC,CAA2B;IACrC,IAAI,IAAI,IAAI;IAYnB,WAAW,CAAC,IAAI,EAAE,CAAC,CAAC,EAAE,OAAO,KAAK,IAAI;IAItC,cAAc;CAIjB"}

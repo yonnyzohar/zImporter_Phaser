@@ -1,0 +1,8 @@
+{
+  "entryPoints": ["src/index.ts"], // Change this to your main file or folder
+  "out": "docs",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": false
+}
