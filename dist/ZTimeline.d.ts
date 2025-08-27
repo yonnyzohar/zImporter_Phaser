@@ -27,7 +27,7 @@ export declare class ZTimeline extends ZContainer {
     looping: boolean;
     cuePoints: Record<number, string>;
     func: ((self: ZTimeline) => void) | undefined;
-    constructor();
+    constructor(scene: Phaser.Scene, x?: number, y?: number, children?: Phaser.GameObjects.GameObject[]);
     setCuePoints(cuePoints: Record<number, string>): void;
     getFrames(): any;
     setFrames(value: any): void;

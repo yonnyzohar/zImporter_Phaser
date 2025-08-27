@@ -1,4 +1,4 @@
-import { Graphics } from "pixi.js";
+import Phaser from "phaser";
 import { ZContainer } from "./ZContainer";
 export class ZScroll extends ZContainer {
     scrollBarHeight = 0;
@@ -11,19 +11,11 @@ export class ZScroll extends ZContainer {
     scrollContent;
     msk = null;
     scrollArea = null;
-    onPointerDownBinded;
-    onPointerMoveBinded;
-    onPointerUpBinded;
-    onWheelBinded;
     init() {
         super.init();
-        this.onPointerDownBinded = this.onPointerDown.bind(this);
-        this.onPointerMoveBinded = this.onPointerMove.bind(this);
-        this.onPointerUpBinded = this.onPointerUp.bind(this);
-        this.onWheelBinded = this.onWheel.bind(this);
-        this.beed = this.getChildByName("beed");
-        this.scrollBar = this.getChildByName("scrollBar");
-        this.scrollContent = this.getChildByName("scrollContent");
+        this.beed = this.getByName("beed");
+        this.scrollBar = this.getByName("scrollBar");
+        this.scrollContent = this.getByName("scrollContent");
         if (!this.beed || !this.scrollBar || !this.scrollContent) {
             console.warn("ZScroll requires 'beed', 'scrollBar', and 'scrollContent' children.");
             return;
@@ -34,34 +26,34 @@ export class ZScroll extends ZContainer {
         this.removeEventListeners();
         if (!this.scrollBar)
             return;
-        let scrollBarHeight = this.scrollBar.height;
-        let contentHeight = this.scrollContent.height;
-        if (contentHeight <= scrollBarHeight) {
-            this.scrollBar.visible = false;
+        this.scrollBarHeight = this.scrollBar.height;
+        this.contentHeight = this.scrollContent.height;
+        if (this.contentHeight <= this.scrollBarHeight) {
+            this.scrollBar.setVisible(false);
             this.scrollContent.y = 0;
             return;
         }
         else {
-            this.scrollBar.visible = true;
-            let w = this.scrollBar.x - this.scrollContent.x;
-            if (this.msk === null) {
-                this.msk = new Graphics();
-                this.addChild(this.msk);
+            this.scrollBar.setVisible(true);
+            const w = this.scrollBar.x - this.scrollContent.x;
+            // Mask
+            if (!this.msk) {
+                this.msk = this.scene.add.graphics();
+                this.add(this.msk);
             }
             this.msk.clear();
-            this.msk.beginFill(0x000000, 0.5);
-            this.msk.drawRect(0, 0, w, scrollBarHeight);
-            this.msk.endFill();
-            this.scrollContent.mask = this.msk;
-            if (this.scrollArea === null) {
-                this.scrollArea = new Graphics();
-                this.addChildAt(this.scrollArea, 0);
+            this.msk.fillStyle(0xffffff, 1);
+            this.msk.fillRect(0, 0, w, this.scrollBarHeight);
+            this.scrollContent.setMask(this.msk.createGeometryMask());
+            // Scroll area
+            if (!this.scrollArea) {
+                this.scrollArea = this.scene.add.graphics();
+                this.addAt(this.scrollArea, 0);
             }
             this.scrollArea.clear();
-            this.scrollArea.beginFill(0x000000, 0.5);
-            this.scrollArea.drawRect(0, 0, w, scrollBarHeight);
-            this.scrollArea.endFill();
-            this.scrollArea.interactive = true;
+            this.scrollArea.fillStyle(0x000000, 0.001); // invisible hit area
+            this.scrollArea.fillRect(0, 0, w, this.scrollBarHeight);
+            this.scrollArea.setInteractive(new Phaser.Geom.Rectangle(0, 0, w, this.scrollBarHeight), Phaser.Geom.Rectangle.Contains);
             this.scrollContent.y = 0;
             this.scrollBar.y = 0;
             this.addEventListeners();
@@ -69,38 +61,30 @@ export class ZScroll extends ZContainer {
     }
     addEventListeners() {
         if (this.scrollArea) {
-            this.scrollArea.on('pointerdown', this.onPointerDownBinded);
-            this.scrollArea.on('ontouchstart', this.onPointerDownBinded);
-            this.scrollArea.on('pointermove', this.onPointerMoveBinded);
-            this.scrollArea.on('ontouchmove', this.onPointerMoveBinded);
-            this.scrollArea.on('pointerup', this.onPointerUpBinded);
-            this.scrollArea.on('ontouchend', this.onPointerUpBinded);
-            this.scrollArea.on('pointerupoutside', this.onPointerUpBinded);
-            this.scrollArea.on('ontouchendoutside', this.onPointerUpBinded);
+            this.scrollArea.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
+            this.scrollArea.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
+            this.scrollArea.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
+            this.scrollArea.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onPointerUp, this);
         }
-        document.body.addEventListener('wheel', this.onWheelBinded);
+        this.scene.input.on("wheel", this.onWheel, this);
     }
     removeEventListeners() {
         if (this.scrollArea) {
-            this.scrollArea.off('pointerdown', this.onPointerDownBinded);
-            this.scrollArea.off('ontouchstart', this.onPointerDownBinded);
-            this.scrollArea.off('pointermove', this.onPointerMoveBinded);
-            this.scrollArea.off('ontouchmove', this.onPointerMoveBinded);
-            this.scrollArea.off('pointerup', this.onPointerUpBinded);
-            this.scrollArea.off('ontouchend', this.onPointerUpBinded);
-            this.scrollArea.off('pointerupoutside', this.onPointerUpBinded);
-            this.scrollArea.off('ontouchendoutside', this.onPointerUpBinded);
+            this.scrollArea.off(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
+            this.scrollArea.off(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
+            this.scrollArea.off(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
+            this.scrollArea.off(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onPointerUp, this);
         }
-        document.body.removeEventListener('wheel', this.onWheelBinded);
+        this.scene.input.off("wheel", this.onWheel, this);
     }
-    onPointerDown(event) {
+    onPointerDown(pointer) {
         this.isDragging = true;
         this.scrollBarHeight = this.scrollBar.height;
-        this.dragStartY = event.data.global.y;
+        this.dragStartY = pointer.worldY;
         this.beedStartY = this.beed.y;
     }
-    onWheel(event) {
-        let delta = -event.deltaY * 0.5;
+    onWheel(pointer, dx, dy, dz, event) {
+        let delta = -dy * 0.5;
         this.scrollBarHeight = this.scrollBar.height;
         this.beed.y -= delta;
         if (this.beed.y < 0)
@@ -111,10 +95,10 @@ export class ZScroll extends ZContainer {
         this.scrollContent.y = -per * (this.scrollContent.height - this.scrollBarHeight);
         event.stopPropagation();
     }
-    onPointerMove(event) {
+    onPointerMove(pointer) {
         if (this.isDragging) {
-            const currentY = event.data.global.y;
-            const deltaY = this.dragStartY - currentY; // Invert direction
+            const currentY = pointer.worldY;
+            const deltaY = this.dragStartY - currentY;
             this.beed.y = this.beedStartY + deltaY;
             // Clamp
             if (this.beed.y < 0)
@@ -124,7 +108,6 @@ export class ZScroll extends ZContainer {
             // Update scrollContent.y
             const per = this.beed.y / (this.scrollBarHeight - this.beed.height);
             this.scrollContent.y = -per * (this.scrollContent.height - this.scrollBarHeight);
-            event.stopPropagation();
         }
     }
     onPointerUp() {

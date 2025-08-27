@@ -1,47 +1,41 @@
+import Phaser from "phaser";
 import { ZContainer } from "./ZContainer";
-import { FederatedPointerEvent, Point } from "pixi.js";
-
-interface DragEvent extends FederatedPointerEvent {
-    global: Point;
-}
 
 export class ZSlider extends ZContainer {
-    // Slider specific properties and methods can be added here
-
     dragging = false;
-    sliderWidth:number | undefined = 0;
+    sliderWidth: number | undefined = 0;
     callback?: (t: number) => void;
-    onDragStartBinded: any;
-    onDragEndBinded: any;
-    onDragBinded: any;
+
+    private handle!: ZContainer;
+    private track!: ZContainer;
 
     init() {
         super.init();
 
-        const handle: ZContainer = this.get('handle') as ZContainer;
-        const track: ZContainer = this.get('track') as ZContainer;
-        if (!handle || !track) {
+        this.handle = this.getByName('handle') as ZContainer;
+        this.track = this.getByName('track') as ZContainer;
+
+        if (!this.handle || !this.track) {
             console.error("ZSlider is missing handle or track");
             return;
         }
 
-        this.sliderWidth = track.width;
-        this.onDragStartBinded = this.onDragStart.bind(this);
-        this.onDragEndBinded = this.onDragEnd.bind(this);
-        this.onDragBinded = this.onDrag.bind(this);
+        this.sliderWidth = this.track.width;
 
-        handle
-            .on('pointerdown', this.onDragStartBinded).on('touchstart', this.onDragStartBinded)
-            .cursor = 'pointer';
+        this.handle.setInteractive({ draggable: true, cursor: 'pointer' });
+
+        this.handle.on(Phaser.Input.Events.DRAG_START, this.onDragStart, this);
+        this.handle.on(Phaser.Input.Events.DRAG, this.onDrag, this);
+        this.handle.on(Phaser.Input.Events.DRAG_END, this.onDragEnd, this);
+
+        // Make the handle draggable within the track bounds
+        this.scene.input.setDraggable(this.handle);
     }
 
     setHandlePosition(t: number) {
-        let handle = (this as any).handle;
-        handle.x = t * this.sliderWidth!;
-        if (this.callback) {
-            this.callback(t);
-        }
-    };
+        this.handle.x = t * this.sliderWidth!;
+        if (this.callback) this.callback(t);
+    }
 
     setCallback(callback: (t: number) => void) {
         this.callback = callback;
@@ -51,47 +45,21 @@ export class ZSlider extends ZContainer {
         this.callback = undefined;
     }
 
-
-    onDragStart(e: DragEvent) {
+    private onDragStart(pointer: Phaser.Input.Pointer) {
         this.dragging = true;
-        let handle = (this as any).handle;
-        handle.on("pointermove", this.onDragBinded);
-        // Or better: app.stage.on("pointermove", onDrag);
-        handle.on("pointerup", this.onDragEndBinded);
-        handle.on("pointerupoutside", this.onDragEndBinded);
-        handle.on("touchend", this.onDragEndBinded);
-        handle.on("touchendoutside", this.onDragEndBinded);
-        handle.on("touchmove", this.onDragBinded);
-    };
+    }
 
-    onDragEnd(e: DragEvent){
+    private onDrag(pointer: Phaser.Input.Pointer, dragX: number, dragY: number) {
+        // Local coordinates relative to the slider container
+        const localX = Phaser.Math.Clamp(dragX - this.x, 0, this.sliderWidth!);
+
+        this.handle.x = localX;
+
+        const t = this.handle.x / this.sliderWidth!;
+        if (this.callback) this.callback(t);
+    }
+
+    private onDragEnd(pointer: Phaser.Input.Pointer) {
         this.dragging = false;
-        let handle = (this as any).handle;
-        handle.off("pointermove", this.onDragBinded);
-        handle.off("pointerup", this.onDragEndBinded);
-        handle.off("pointerupoutside", this.onDragEndBinded);
-        handle.off("touchend", this.onDragEndBinded);
-        handle.off("touchendoutside", this.onDragEndBinded);
-        handle.off("touchmove", this.onDragBinded);
-    };
-
-    onDrag(e: DragEvent): void{
-        const global = e.data?.global;
-        if (!global) return;
-
-        const local = this.toLocal(global);
-        let handle = (this as any).handle;
-        handle.x = local.x;
-
-        if (handle.x < 0) handle.x = 0;
-        if (handle.x > this.sliderWidth!) handle.x = this.sliderWidth;
-
-        const t = handle.x / this.sliderWidth!;
-        if (this.callback) {
-            this.callback(t);
-        }
-        e.stopPropagation();
-    };
-
-    
+    }
 }

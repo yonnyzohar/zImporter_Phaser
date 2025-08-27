@@ -28,8 +28,8 @@ export class ZTimeline extends ZContainer {
     looping = true;
     cuePoints = {};
     func;
-    constructor() {
-        super();
+    constructor(scene, x = 0, y = 0, children) {
+        super(scene, x, y, children);
         this.totalFrames;
         this._frames;
         this.currentFrame = 0;

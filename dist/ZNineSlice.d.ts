@@ -1,10 +1,10 @@
-import * as PIXI from "pixi.js";
+import Phaser from "phaser";
 import { NineSliceData, OrientationData } from "./SceneData";
-export declare class ZNineSlice extends PIXI.NineSlicePlane {
+export declare class ZNineSlice extends Phaser.GameObjects.NineSlice {
     portrait: OrientationData;
     landscape: OrientationData;
     currentTransform: OrientationData;
-    constructor(texture: PIXI.Texture, nineSliceData: NineSliceData, orientation: string);
+    constructor(scene: Phaser.Scene, x: number, y: number, texture: string | Phaser.Textures.Texture, frame: string | number | undefined, nineSliceData: NineSliceData, orientation: "portrait" | "landscape");
     resize(width: number, height: number, orientation: "portrait" | "landscape"): void;
     private applyTransform;
 }

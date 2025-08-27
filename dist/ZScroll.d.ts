@@ -1,9 +1,5 @@
-import { Graphics } from "pixi.js";
+import Phaser from "phaser";
 import { ZContainer } from "./ZContainer";
-import { FederatedPointerEvent, Point } from "pixi.js";
-interface DragEvent extends FederatedPointerEvent {
-    global: Point;
-}
 export declare class ZScroll extends ZContainer {
     scrollBarHeight: number;
     contentHeight: number;
@@ -13,21 +9,16 @@ export declare class ZScroll extends ZContainer {
     beed: ZContainer;
     scrollBar: ZContainer;
     scrollContent: ZContainer;
-    msk: Graphics | null;
-    scrollArea: Graphics | null;
-    private onPointerDownBinded;
-    private onPointerMoveBinded;
-    private onPointerUpBinded;
-    private onWheelBinded;
+    msk: Phaser.GameObjects.Graphics | null;
+    scrollArea: Phaser.GameObjects.Graphics | null;
     init(): void;
     private calculateScrollBar;
     addEventListeners(): void;
     removeEventListeners(): void;
-    onPointerDown(event: DragEvent): void;
-    onWheel(event: WheelEvent): void;
-    onPointerMove(event: DragEvent): void;
-    onPointerUp(): void;
+    private onPointerDown;
+    private onWheel;
+    private onPointerMove;
+    private onPointerUp;
     applyTransform(): void;
 }
-export {};
 //# sourceMappingURL=ZScroll.d.ts.map

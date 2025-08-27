@@ -1,5 +1,3 @@
-import { EmitterConfigV3 } from "@pixi/particle-emitter";
-import * as PIXI from "pixi.js";
 export declare enum AnchorConsts {
     NONE = "none",
     TOP_LEFT = "topLeft",
@@ -93,7 +91,7 @@ export interface ParticleData extends BaseAssetData {
     jsonPath: string;
     pngPaths: string[];
     name: string;
-    emitterConfig: EmitterConfigV3;
+    emitterConfig: any;
 }
 export interface SpriteData extends BaseAssetData {
     name: string;
@@ -128,7 +126,7 @@ export interface TextData extends BaseAssetData {
     height: number;
     alpha: number;
     size: number | string;
-    color: PIXI.TextStyleFill;
+    color: any;
     align: string;
     text: string;
     fontName: string | string[];

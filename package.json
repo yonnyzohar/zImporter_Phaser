@@ -1,5 +1,5 @@
 {
-  "name": "zimporter-pixi",
+  "name": "zimporter-phaser",
   "version": "1.0.40",
   "description": "",
   "main": "dist/index.js",
@@ -9,16 +9,7 @@
     "package": "tsc && webpack --config webpack.config.js"
   },
   "peerDependencies": {
-    "@pixi-spine/all-4.0": "^4.0.4",
-    "@pixi-spine/base": "^4.0.5",
-    "@pixi-spine/loader-base": "^4.0.5",
-    "@pixi-spine/loader-uni": "^4.0.5",
-    "@pixi-spine/runtime-3.7": "^4.0.5",
-    "@pixi-spine/runtime-3.8": "^4.0.5",
-    "@pixi-spine/runtime-4.1": "^4.0.5",
-    "@pixi/filter-drop-shadow": "^5.2.0",
-    "@pixi/particle-emitter": "^5.0.8",
-    "pixi.js": "^7.4.2"
+    "phaser": "^3.60.0"
   },
   "keywords": [],
   "author": "",
@@ -34,19 +25,11 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
-    "@pixi-spine/all-4.0": "^4.0.4",
-    "@pixi-spine/base": "^4.0.5",
-    "@pixi-spine/loader-base": "^4.0.5",
-    "@pixi-spine/loader-uni": "^4.0.5",
-    "@pixi-spine/runtime-3.7": "^4.0.5",
-    "@pixi-spine/runtime-3.8": "^4.0.5",
-    "@pixi-spine/runtime-4.1": "^4.0.5",
-    "@pixi/filter-drop-shadow": "^5.2.0",
-    "@pixi/particle-emitter": "^5.0.8",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "gsap": "^3.12.7",
-    "pixi.js": "^7.4.2",
+    "phaser": "^3.60.0",
+    "phaser-spine": "^2.2.0",
     "reflect-metadata": "^0.2.2"
   },
   "files": [

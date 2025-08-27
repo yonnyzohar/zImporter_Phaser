@@ -1,22 +1,16 @@
 import { ZContainer } from "./ZContainer";
-import { FederatedPointerEvent, Point } from "pixi.js";
-interface DragEvent extends FederatedPointerEvent {
-    global: Point;
-}
 export declare class ZSlider extends ZContainer {
     dragging: boolean;
     sliderWidth: number | undefined;
     callback?: (t: number) => void;
-    onDragStartBinded: any;
-    onDragEndBinded: any;
-    onDragBinded: any;
+    private handle;
+    private track;
     init(): void;
     setHandlePosition(t: number): void;
     setCallback(callback: (t: number) => void): void;
     removeCallback(): void;
-    onDragStart(e: DragEvent): void;
-    onDragEnd(e: DragEvent): void;
-    onDrag(e: DragEvent): void;
+    private onDragStart;
+    private onDrag;
+    private onDragEnd;
 }
-export {};
 //# sourceMappingURL=ZSlider.d.ts.map

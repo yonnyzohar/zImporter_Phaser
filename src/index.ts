@@ -10,7 +10,5 @@ export { ZToggle } from './ZToggle';
 export { ZScroll } from './ZScroll';
 export { ZSlider } from './ZSlider';
 export { ZCuePointsManager } from './ZCuePointsManager';
-export { ZTextInput } from './ZTextInput';
 export { ZNineSlice } from './ZNineSlice';
-export { ZSpine } from './ZSpine';
 

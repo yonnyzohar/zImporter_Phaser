@@ -6,15 +6,14 @@ export class ZToggle extends ZState {
 
     private callback?: (state: boolean) => void;
     public init(): void {
-        this.cursor = "pointer";
         AttachClickListener(this, () => {
-            this.setState(this.currentState!.name === "offState" ? "onState" : "offState");
+            this.setViewState(this.currentState!.name === "offState" ? "onState" : "offState");
             if (this.callback) {
                 this.callback(this.currentState!.name === "onState");
             }
         });
 
-        this.setState("offState");
+        this.setViewState("offState");
     }
 
     setCallback(func: (t: boolean) => void) {

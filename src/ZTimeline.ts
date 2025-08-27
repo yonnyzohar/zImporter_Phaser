@@ -31,8 +31,8 @@ export class ZTimeline extends ZContainer {
     cuePoints: Record<number, string> = {};
     func: ((self: ZTimeline) => void) | undefined;
 
-    constructor() {
-        super();
+    constructor(scene: Phaser.Scene, x = 0, y = 0, children?: Phaser.GameObjects.GameObject[]) {
+        super(scene, x, y, children);
         this.totalFrames;
         this._frames;
         this.currentFrame = 0;
@@ -127,9 +127,9 @@ export class ZTimeline extends ZContainer {
             for (const k in this._frames) {
                 if (this._frames[k][this.currentFrame]) {
                     const frame = this._frames[k][this.currentFrame];
-                    
+
                     if (this[k]) {
-                        
+
                         if (frame.pivotX != undefined) {
                             this[k].pivot.x = frame.pivotX;
                         }
@@ -151,11 +151,11 @@ export class ZTimeline extends ZContainer {
                         if (frame.alpha != undefined) {
                             this[k].alpha = frame.alpha;
                         }
-                        if(frame.rotation != undefined) {
+                        if (frame.rotation != undefined) {
                             this[k].rotation = frame.rotation;
                         }
 
-                       
+
                     }
                     /**/
                 }
