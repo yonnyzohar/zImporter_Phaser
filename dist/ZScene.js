@@ -32,7 +32,7 @@ export class ZScene {
         this.phaserScene = phaserScene;
         this.setOrientation();
         ZScene.Map.set(_sceneId, this);
-        this._sceneStage = new Phaser.GameObjects.Container(null); // Will be added to scene later
+        this._sceneStage = new Phaser.GameObjects.Container(phaserScene); // Will be added to scene later
     }
     get sceneStage() {
         return this._sceneStage;
