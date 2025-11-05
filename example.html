@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>zImporter Phaser Scene Example</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.js"></script>
+    <!-- Load your compiled bundle -->
+    <script src="./dist/zimporter-phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="game-container"></div>
+    <script>
+
+        // Example JSON path (adjust as needed)
+        let sceneJsonPath = "./assets/complexButton/";
+
+        // Define a Phaser scene that will use ZScene
+        class MyPhaserScene extends Phaser.Scene {
+
+            preload() {
+                // Optionally preload assets here
+            }
+            create() {
+                // Instantiate ZScene and load the scene JSON
+                this.zScene = new zimporter.ZScene('testScene', this);
+                this.zScene.load(sceneJsonPath, () => {
+                    // After loading, add objects to this Phaser scene
+                    this.zScene.loadStage(this);
+                });
+            }
+        }
+
+        // Create Phaser game config
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            parent: 'game-container',
+            scene: [MyPhaserScene],
+            backgroundColor: '#222'
+        };
+
+        // Start Phaser game
+        const game = new Phaser.Game(config);
+    </script>
+</body>
+
+</html>

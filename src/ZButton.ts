@@ -8,7 +8,8 @@ export const RemoveClickListener = (container: Phaser.GameObjects.Container): vo
 };
 
 export const AttachClickListener = (container: Phaser.GameObjects.Container, callback: () => void): void => {
-    container.setInteractive({ useHandCursor: true });
+    // Ensure a valid hit area on Containers
+    (container as any).enablePointerInteraction?.(true);
     container.on('pointerdown', callback);
 };
 
@@ -44,8 +45,8 @@ export class ZButton extends ZContainer {
     init(_labelStr: string = "") {
         super.init?.();
 
-        // enable input
-        this.setInteractive({ useHandCursor: true });
+        // enable input (Containers need an explicit hit area)
+        this.enablePointerInteraction(true);
 
         if (this.overState) {
             this.overLabelContainer = this.overState.getByName("labelContainer") as ZContainer;
@@ -173,7 +174,7 @@ export class ZButton extends ZContainer {
 
     enable() {
         this.removeAllListeners();
-        this.setInteractive({ useHandCursor: true });
+        this.enablePointerInteraction(true);
 
         if (this.upState) {
             this.upState.setVisible(true);

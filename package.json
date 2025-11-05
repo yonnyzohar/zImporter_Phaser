@@ -6,7 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "package": "tsc && webpack --config webpack.config.js"
+    "package": "tsc --emitDeclarationOnly && webpack --config webpack.config.js"
   },
   "peerDependencies": {
     "phaser": "^3.60.0"

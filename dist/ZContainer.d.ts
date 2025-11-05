@@ -38,5 +38,10 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     loadParticle(emitterConfig: any, textureKey: string): void;
     playParticleAnim(): void;
     stopParticleAnim(): void;
+    /**
+     * Enable pointer interaction on a Container by assigning a Rectangle hit area
+     * based on its current bounds. Containers don't have a default hit area in Phaser.
+     */
+    enablePointerInteraction(useHandCursor?: boolean): void;
 }
 //# sourceMappingURL=ZContainer.d.ts.map

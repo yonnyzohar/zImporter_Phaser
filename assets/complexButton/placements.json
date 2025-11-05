@@ -1,0 +1,764 @@
+{
+  "resolution": {
+    "x": 1136,
+    "y": 640
+  },
+  "animTracks": {},
+  "stage": {
+    "children": [
+      {
+        "portrait": {
+          "x": 316.96,
+          "y": 99.67,
+          "rotation": 0,
+          "scaleX": 1,
+          "scaleY": 1,
+          "alpha": 1,
+          "pivotX": 0,
+          "pivotY": 0,
+          "visible": true,
+          "isAnchored": false,
+          "anchorLocalPercentage": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "landscape": {
+          "x": 316.96,
+          "y": 99.67,
+          "rotation": 0,
+          "scaleX": 1,
+          "scaleY": 1,
+          "alpha": 1,
+          "pivotX": 0,
+          "pivotY": 0,
+          "visible": true,
+          "isAnchored": false,
+          "anchorLocalPercentage": {
+            "x": 0,
+            "y": 0
+          }
+        },
+        "type": "btn",
+        "name": "ExampleBTNTemplate",
+        "guide": false,
+        "template": true,
+        "instanceName": "exampleBTN",
+        "filters": {}
+      }
+    ],
+    "type": "Container",
+    "name": "stage"
+  },
+  "templates": {
+    "ExampleBTNTemplate": {
+      "type": "btn",
+      "name": "ExampleBTNTemplate",
+      "children": [
+        {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 0.48,
+            "scaleY": 0.48,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 0.48,
+            "scaleY": 0.48,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "asset",
+          "name": "ExampleBTNDisabledState",
+          "guide": false,
+          "template": true,
+          "instanceName": "disabledState",
+          "filters": {}
+        },
+        {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 0.48,
+            "scaleY": 0.48,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 0.48,
+            "scaleY": 0.48,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "asset",
+          "name": "ExampleBTNUpState",
+          "guide": false,
+          "template": true,
+          "instanceName": "upState",
+          "filters": {}
+        },
+        {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 0.48,
+            "scaleY": 0.48,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 0.48,
+            "scaleY": 0.48,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "asset",
+          "name": "ExampleBTNDownState",
+          "guide": false,
+          "template": true,
+          "instanceName": "downState",
+          "filters": {}
+        },
+        {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 0.47,
+            "scaleY": 0.47,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 0.47,
+            "scaleY": 0.47,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "asset",
+          "name": "ExampleBTNOverState",
+          "guide": false,
+          "template": true,
+          "instanceName": "overState",
+          "filters": {}
+        }
+      ]
+    },
+    "ExampleBTNDisabledState": {
+      "type": "asset",
+      "name": "ExampleBTNDisabledState",
+      "children": [
+        {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 168,
+            "pivotY": 78,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 168,
+            "pivotY": 78,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "asset",
+          "name": "ExampleBTNDisabledStateBG",
+          "guide": false,
+          "template": true,
+          "instanceName": "bg",
+          "filters": {}
+        },
+        {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "asset",
+          "name": "ExampleBTNLabelDisabled",
+          "guide": false,
+          "template": true,
+          "instanceName": "labelContainer",
+          "filters": {}
+        }
+      ]
+    },
+    "ExampleBTNDisabledStateBG": {
+      "type": "asset",
+      "name": "ExampleBTNDisabledStateBG",
+      "children": [
+        {
+          "type": "img",
+          "name": "ExampleBTNDisabledStateBG_IMG",
+          "width": 336,
+          "height": 156,
+          "x": 0,
+          "y": 0,
+          "filters": {}
+        }
+      ]
+    },
+    "ExampleBTNLabelDisabled": {
+      "type": "asset",
+      "name": "ExampleBTNLabelDisabled",
+      "children": [
+        {
+          "text": "DISABLED!",
+          "type": "textField",
+          "name": "label",
+          "x": -1.4517299171840818,
+          "y": 1.4517299171840818,
+          "rotation": 0,
+          "width": 239.92,
+          "height": 62.92,
+          "alpha": 1,
+          "size": 45,
+          "color": "#ffffff",
+          "align": "center",
+          "fontName": "Adelle Sans Devanagari",
+          "z": 1,
+          "stroke": "#550202",
+          "strokeThickness": 5,
+          "wordWrap": false,
+          "wordWrapWidth": 100,
+          "breakWords": false,
+          "leading": 0,
+          "letterSpacing": 1.07,
+          "padding": 2.04,
+          "textAnchorX": 0.5,
+          "textAnchorY": 0.5,
+          "fontWeight": "Normal",
+          "filters": {}
+        }
+      ]
+    },
+    "ExampleBTNUpState": {
+      "type": "asset",
+      "name": "ExampleBTNUpState",
+      "children": [
+        {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 168,
+            "pivotY": 78,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 168,
+            "pivotY": 78,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "asset",
+          "name": "ExampleBTNUpStateBG",
+          "guide": false,
+          "template": true,
+          "instanceName": "bg",
+          "filters": {}
+        },
+        {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "asset",
+          "name": "ExampleBTNTextUp",
+          "guide": false,
+          "template": true,
+          "instanceName": "labelContainer",
+          "filters": {}
+        }
+      ]
+    },
+    "ExampleBTNUpStateBG": {
+      "type": "asset",
+      "name": "ExampleBTNUpStateBG",
+      "children": [
+        {
+          "type": "img",
+          "name": "ExampleBTNUpStateBG_IMG",
+          "width": 336,
+          "height": 156,
+          "x": 0,
+          "y": 0,
+          "filters": {}
+        }
+      ]
+    },
+    "ExampleBTNTextUp": {
+      "type": "asset",
+      "name": "ExampleBTNTextUp",
+      "children": [
+        {
+          "text": "CLICK ME",
+          "type": "textField",
+          "name": "label",
+          "x": -1.4517299171840818,
+          "y": 1.4517299171840818,
+          "rotation": 0,
+          "width": 215.92,
+          "height": 58.92,
+          "alpha": 1,
+          "size": 45,
+          "color": "#ffffff",
+          "align": "center",
+          "fontName": "Adelle Sans Devanagari",
+          "z": 1,
+          "stroke": "#000000",
+          "strokeThickness": 3,
+          "wordWrap": false,
+          "wordWrapWidth": 100,
+          "breakWords": false,
+          "leading": 0,
+          "letterSpacing": 1.07,
+          "padding": 2.04,
+          "textAnchorX": 0.5,
+          "textAnchorY": 0.5,
+          "fontWeight": "Normal",
+          "filters": {}
+        }
+      ]
+    },
+    "ExampleBTNDownState": {
+      "type": "asset",
+      "name": "ExampleBTNDownState",
+      "children": [
+        {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 168,
+            "pivotY": 78,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 168,
+            "pivotY": 78,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "asset",
+          "name": "ExampleBTNDownStateBG",
+          "guide": false,
+          "template": true,
+          "instanceName": "bg",
+          "filters": {}
+        },
+        {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "asset",
+          "name": "ExampleBTNTextDown",
+          "guide": false,
+          "template": true,
+          "instanceName": "labelContainer",
+          "filters": {}
+        }
+      ]
+    },
+    "ExampleBTNDownStateBG": {
+      "type": "asset",
+      "name": "ExampleBTNDownStateBG",
+      "children": [
+        {
+          "type": "img",
+          "name": "ExampleBTNDownStateBG_IMG",
+          "width": 336,
+          "height": 156,
+          "x": 0,
+          "y": 0,
+          "filters": {}
+        }
+      ]
+    },
+    "ExampleBTNTextDown": {
+      "type": "asset",
+      "name": "ExampleBTNTextDown",
+      "children": [
+        {
+          "text": "DOWN",
+          "type": "textField",
+          "name": "label",
+          "x": -1.4517299171840818,
+          "y": 1.4517299171840818,
+          "rotation": 0,
+          "width": 148.92,
+          "height": 62.92,
+          "alpha": 1,
+          "size": 45,
+          "color": "#ffea05",
+          "align": "center",
+          "fontName": "Adelle Sans Devanagari",
+          "z": 1,
+          "stroke": "#c11a1a",
+          "strokeThickness": 5,
+          "wordWrap": false,
+          "wordWrapWidth": 100,
+          "breakWords": false,
+          "leading": 0,
+          "letterSpacing": 1.07,
+          "padding": 2.04,
+          "textAnchorX": 0.5,
+          "textAnchorY": 0.5,
+          "fontWeight": "Normal",
+          "filters": {}
+        }
+      ]
+    },
+    "ExampleBTNOverState": {
+      "type": "asset",
+      "name": "ExampleBTNOverState",
+      "children": [
+        {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 168,
+            "pivotY": 78,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 168,
+            "pivotY": 78,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "asset",
+          "name": "ExampleBTNHoverStateBG",
+          "guide": false,
+          "template": true,
+          "instanceName": "bg",
+          "filters": {}
+        },
+        {
+          "portrait": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "landscape": {
+            "x": 0,
+            "y": 0,
+            "rotation": 0,
+            "scaleX": 1,
+            "scaleY": 1,
+            "alpha": 1,
+            "pivotX": 0,
+            "pivotY": 0,
+            "visible": true,
+            "isAnchored": false,
+            "anchorLocalPercentage": {
+              "x": 0,
+              "y": 0
+            }
+          },
+          "type": "asset",
+          "name": "ExampleBTNTextOver",
+          "guide": false,
+          "template": true,
+          "instanceName": "labelContainer",
+          "filters": {}
+        }
+      ]
+    },
+    "ExampleBTNHoverStateBG": {
+      "type": "asset",
+      "name": "ExampleBTNHoverStateBG",
+      "children": [
+        {
+          "type": "img",
+          "name": "ExampleBTNHoverStateBG_IMG",
+          "width": 336,
+          "height": 156,
+          "x": 0,
+          "y": 0,
+          "filters": {}
+        }
+      ]
+    },
+    "ExampleBTNTextOver": {
+      "type": "asset",
+      "name": "ExampleBTNTextOver",
+      "children": [
+        {
+          "text": "OVER",
+          "type": "textField",
+          "name": "label",
+          "x": -1.4517299171840818,
+          "y": 1.4517299171840818,
+          "rotation": 0,
+          "width": 152.92,
+          "height": 58.92,
+          "alpha": 1,
+          "size": 45,
+          "color": "#ffffff",
+          "align": "center",
+          "fontName": "Adelle Sans Devanagari",
+          "z": 1,
+          "stroke": "#000000",
+          "strokeThickness": 3,
+          "wordWrap": false,
+          "wordWrapWidth": 100,
+          "breakWords": false,
+          "leading": 0,
+          "letterSpacing": 10.3,
+          "padding": 2.04,
+          "textAnchorX": 0.5,
+          "textAnchorY": 0.5,
+          "fontWeight": "Bold",
+          "filters": {}
+        }
+      ]
+    }
+  },
+  "fonts": [],
+  "fps": 60,
+  "cuePoints": {}
+}

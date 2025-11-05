@@ -15,11 +15,19 @@ export declare class ZScene {
     private orientation;
     private sceneName;
     private phaserScene;
+    private usesAtlas;
     constructor(_sceneId: string, phaserScene: Phaser.Scene);
     get sceneStage(): Phaser.GameObjects.Container;
     setOrientation(): void;
     static getSceneById(sceneId: string): ZScene | undefined;
     loadStage(): void;
+    /**
+     * Return the inner design resolution adjusted for current orientation.
+     */
+    getInnerDimensions(): {
+        width: number;
+        height: number;
+    };
     addToResizeMap(mc: ZContainer | ZNineSlice): void;
     removeFromResizeMap(mc: ZContainer): void;
     resize(width: number, height: number): void;
@@ -37,5 +45,10 @@ export declare class ZScene {
     spawn(tempName: string): ZContainer | undefined;
     getChildrenFrames(_templateName: string): Record<string, AnimTrackData[]>;
     createAsset(mc: ZContainer, baseNode: TemplateData): Promise<void>;
+    /**
+     * Build a list of unique images to load when not using an atlas.
+     * Mirrors the PIXI variant's behavior.
+     */
+    private createImagesObject;
 }
 //# sourceMappingURL=ZScene.d.ts.map

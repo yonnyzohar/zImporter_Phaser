@@ -33,13 +33,14 @@ export class ZScene {
   private orientation: "landscape" | "portrait" = "portrait";
   private sceneName: string | null = null;
   private phaserScene!: Phaser.Scene;
+  private usesAtlas: boolean = true;
 
   constructor(_sceneId: string, phaserScene: Phaser.Scene) {
     this.sceneId = _sceneId;
     this.phaserScene = phaserScene;
     this.setOrientation();
     ZScene.Map.set(_sceneId, this);
-    this._sceneStage = new Phaser.GameObjects.Container(phaserScene); // Will be added to scene later
+
   }
 
   public get sceneStage() {
@@ -74,7 +75,23 @@ export class ZScene {
     }
 
     this.phaserScene.add.existing(this._sceneStage);
+    (window as any).game = this._sceneStage;
     this.resize(window.innerWidth, window.innerHeight);
+  }
+
+  /**
+   * Return the inner design resolution adjusted for current orientation.
+   */
+  public getInnerDimensions(): { width: number; height: number } {
+    if (!this.data?.resolution) {
+      return { width: 0, height: 0 };
+    }
+    let baseWidth = this.data.resolution.x;
+    let baseHeight = this.data.resolution.y;
+    if (this.orientation === "portrait") {
+      [baseWidth, baseHeight] = [baseHeight, baseWidth];
+    }
+    return { width: baseWidth, height: baseHeight };
   }
 
   public addToResizeMap(mc: ZContainer | ZNineSlice) {
@@ -119,24 +136,50 @@ export class ZScene {
     placementsObj: SceneData,
     _loadCompleteFnctn: Function
   ) {
-    const atlasKey = 'sceneAtlas';
-    const atlasJsonUrl = assetBasePath + "ta.json?rnd=" + Math.random();
-    const atlasImageUrl = assetBasePath + "ta.png?rnd=" + Math.random(); // assume the image is ta.png
+    const isAtlas = (placementsObj as any).atlas ?? true; // default to true for backward compatibility
+    this.usesAtlas = !!isAtlas;
 
-    // Start loading the atlas
-    this.phaserScene.load.atlas(atlasKey, atlasImageUrl, atlasJsonUrl);
+    if (isAtlas) {
+      const atlasKey = 'sceneAtlas';
+      const atlasJsonUrl = assetBasePath + "ta.json?rnd=" + Math.random();
+      const atlasImageUrl = assetBasePath + "ta.png?rnd=" + Math.random();
+      this.phaserScene.load.atlas(atlasKey, atlasImageUrl, atlasJsonUrl);
+      this.phaserScene.load.once('complete', () => {
+        this.scene = this.phaserScene.textures.get(atlasKey);
+        this.sceneName = atlasKey;
+        this.initScene(placementsObj);
+        _loadCompleteFnctn();
+      });
+      this.phaserScene.load.start();
+      return;
+    }
 
-    // Listen for completion
+    // Non-atlas mode: load individual images derived from templates
+    const images = this.createImagesObject(assetBasePath, placementsObj);
+    images.forEach(img => {
+      // Avoid duplicate keys
+      if (!this.phaserScene.textures.exists(img.alias)) {
+        this.phaserScene.load.image(img.alias, img.src);
+      }
+    });
+
+    // Optional: load bitmap fonts if provided (expects .png and .xml or .fnt next to each other)
+    if ((placementsObj as any).fonts && (placementsObj as any).fonts.length > 0) {
+      try {
+        for (const fontName of (placementsObj as any).fonts as string[]) {
+          const pngUrl = assetBasePath + fontName + '.png';
+          const xmlUrl = assetBasePath + fontName + '.fnt';
+          // Phaser will ignore if keys duplicate
+          this.phaserScene.load.bitmapFont(fontName, pngUrl, xmlUrl);
+        }
+      } catch { }
+    }
+
     this.phaserScene.load.once('complete', () => {
-      // Store the loaded atlas
-      this.scene = this.phaserScene.textures.get(atlasKey); // Phaser.TextureManager entry
-      this.sceneName = atlasKey;
-
+      this.sceneName = 'images';
       this.initScene(placementsObj);
       _loadCompleteFnctn();
     });
-
-    // Start the Phaser loader
     this.phaserScene.load.start();
   }
 
@@ -144,6 +187,7 @@ export class ZScene {
 
 
   async load(assetBasePath: string, _loadCompleteFnctn: Function) {
+    this._sceneStage = new Phaser.GameObjects.Container(this.phaserScene); // Will be added to scene later
     this.assetBasePath = assetBasePath;
     const placementsUrl = assetBasePath + "placements.json?rnd=" + Math.random();
     try {
@@ -184,7 +228,7 @@ export class ZScene {
       }
       (mc as ZTimeline).gotoAndStop(0);
     } else {
-      mc = new (ZScene.getAssetType(baseNode.type) || ZContainer)();
+      mc = new (ZScene.getAssetType(baseNode.type) || ZContainer)(this.phaserScene);
       this.createAsset(mc, baseNode);
       mc.init();
     }
@@ -212,24 +256,77 @@ export class ZScene {
       const type = childNode.type;
       let asset: any;
 
-      // Text
+      // Text (BitmapText preferred if font is available)
       if (type === "textField" || type === "bmpTextField") {
-        const textNode = childNode as TextData;
-        asset = this.phaserScene.add.text(textNode.x, textNode.y, textNode.text || "", {
-          fontFamily: textNode.fontName as string,
-          fontSize: textNode.size,
-          color: textNode.color,
-          align: textNode.align
-        });
-        mc.add(asset);
-        (mc as any)[textNode.name] = asset;
+        const textNode = childNode as TextData & {
+          textAnchorX?: number; textAnchorY?: number;
+          pivotX?: number; pivotY?: number;
+          stroke?: string; strokeThickness?: number;
+          wordWrap?: boolean; wordWrapWidth?: number; breakWords?: boolean;
+          leading?: number; letterSpacing?: number; padding?: number;
+          fontWeight?: string;
+        };
+
+        const hasBitmap = this.phaserScene.cache.bitmapFont.exists(textNode.fontName as string);
+        if (hasBitmap) {
+          const tf = this.phaserScene.add.bitmapText(
+            textNode.x,
+            textNode.y,
+            textNode.fontName as string,
+            textNode.text || "",
+            (textNode.size as number) || undefined
+          );
+          if (typeof textNode.letterSpacing === 'number' && (tf as any).setLetterSpacing) {
+            (tf as Phaser.GameObjects.BitmapText).setLetterSpacing(textNode.letterSpacing);
+          }
+          tf.setName(textNode.name);
+          mc.add(tf);
+          (mc as any)[textNode.name] = tf;
+        } else {
+          const style: Phaser.Types.GameObjects.Text.TextStyle = {
+            fontFamily: textNode.fontName as string,
+            fontSize: textNode.size as any,
+            color: textNode.color as any,
+            align: textNode.align as any
+          };
+          if (typeof textNode.letterSpacing === 'number') {
+            (style as any).letterSpacing = textNode.letterSpacing;
+          }
+          if (typeof textNode.fontWeight === 'string') {
+            (style as any).fontStyle = textNode.fontWeight; // Phaser uses fontStyle e.g. 'bold'
+          }
+          if (textNode.wordWrap && typeof textNode.wordWrapWidth === 'number') {
+            style.wordWrap = { width: textNode.wordWrapWidth, useAdvancedWrap: true } as any;
+          }
+          const tf = this.phaserScene.add.text(textNode.x, textNode.y, (textNode.text ?? "") + "", style);
+          if (typeof textNode.stroke === 'string' && typeof textNode.strokeThickness === 'number') {
+            tf.setStroke(textNode.stroke as any, textNode.strokeThickness);
+          }
+          if (typeof textNode.padding === 'number') {
+            tf.setPadding(textNode.padding);
+          }
+          if (typeof textNode.leading === 'number' && (tf as any).setLineSpacing) {
+            (tf as Phaser.GameObjects.Text).setLineSpacing(textNode.leading);
+          }
+          if (typeof textNode.textAnchorX === 'number' && typeof textNode.textAnchorY === 'number') {
+            tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
+          }
+          // Pivot in PIXI is pixel-based; Phaser origin is normalized. Skipping exact pivot emulation.
+          tf.setName(textNode.name);
+          (mc as any)[textNode.name] = tf;
+          mc.add(tf);
+        }
       }
 
       // Sprite
       if (type === "img") {
         const spriteNode = childNode as SpriteData;
-        const texKey = spriteNode.name.replace(/(_IMG|_9S)$/, "");
-        asset = this.phaserScene.add.sprite(spriteNode.x, spriteNode.y, texKey);
+        const frameKey = spriteNode.name.replace(/(_IMG|_9S)$/, "");
+        if (this.usesAtlas) {
+          asset = this.phaserScene.add.sprite(spriteNode.x, spriteNode.y, this.sceneName as string, frameKey);
+        } else {
+          asset = this.phaserScene.add.sprite(spriteNode.x, spriteNode.y, frameKey);
+        }
         asset.setDisplaySize(spriteNode.width, spriteNode.height);
         mc.add(asset);
         (mc as any)[spriteNode.name] = asset;
@@ -238,8 +335,10 @@ export class ZScene {
       // 9-Slice
       if (type === "9slice") {
         const nineSliceData = childNode as NineSliceData;
-        const texKey = nineSliceData.name.replace("_9S", "");
-        const nineSlice = new ZNineSlice(this.phaserScene, 0, 0, this.phaserScene.textures.get(texKey), 0, nineSliceData, this.orientation);
+        const frameKey = nineSliceData.name.replace("_9S", "");
+        const textureKeyOrObj: string | Phaser.Textures.Texture = this.usesAtlas ? (this.sceneName as string) : frameKey;
+        const frame: string | number | undefined = this.usesAtlas ? frameKey : undefined;
+        const nineSlice = new ZNineSlice(this.phaserScene, 0, 0, textureKeyOrObj, frame, nineSliceData, this.orientation);
         mc.add(nineSlice);
         (mc as any)[nineSliceData.name] = nineSlice;
         this.addToResizeMap(nineSlice);
@@ -263,5 +362,31 @@ export class ZScene {
 
       asset?.init?.();
     }
+  }
+
+  /**
+   * Build a list of unique images to load when not using an atlas.
+   * Mirrors the PIXI variant's behavior.
+   */
+  private createImagesObject(assetBasePath: string, obj: SceneData): { alias: string; src: string }[] {
+    const images: { alias: string; src: string }[] = [];
+    const record: Record<string, boolean> = {};
+    const templates = obj.templates;
+    for (const templateName in templates) {
+      const children = templates[templateName].children as BaseAssetData[];
+      for (const child of children) {
+        if (child.type === 'img' || child.type === '9slice') {
+          const sprite = child as SpriteData | NineSliceData;
+          if (!record[sprite.name]) {
+            record[sprite.name] = true;
+            let texName = sprite.name.endsWith('_9S') ? sprite.name.slice(0, -3) : sprite.name;
+            texName = texName.endsWith('_IMG') ? texName.slice(0, -4) : texName;
+            // SceneData SpriteData uses filePath for non-atlas images
+            images.push({ alias: texName, src: assetBasePath + (sprite as any).filePath });
+          }
+        }
+      }
+    }
+    return images;
   }
 }

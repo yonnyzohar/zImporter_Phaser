@@ -3,7 +3,8 @@ export const RemoveClickListener = (container) => {
     container.removeListener('pointerdown');
 };
 export const AttachClickListener = (container, callback) => {
-    container.setInteractive({ useHandCursor: true });
+    // Ensure a valid hit area on Containers
+    container.enablePointerInteraction?.(true);
     container.on('pointerdown', callback);
 };
 export class ZButton extends ZContainer {
@@ -30,8 +31,8 @@ export class ZButton extends ZContainer {
     labelState = "none";
     init(_labelStr = "") {
         super.init?.();
-        // enable input
-        this.setInteractive({ useHandCursor: true });
+        // enable input (Containers need an explicit hit area)
+        this.enablePointerInteraction(true);
         if (this.overState) {
             this.overLabelContainer = this.overState.getByName("labelContainer");
             this.overLabelContainer2 = this.overState.getByName("labelContainer2");
@@ -135,7 +136,7 @@ export class ZButton extends ZContainer {
     }
     enable() {
         this.removeAllListeners();
-        this.setInteractive({ useHandCursor: true });
+        this.enablePointerInteraction(true);
         if (this.upState) {
             this.upState.setVisible(true);
             this.add(this.upState);

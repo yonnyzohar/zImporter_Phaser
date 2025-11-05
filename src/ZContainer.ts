@@ -195,4 +195,22 @@ export class ZContainer extends Phaser.GameObjects.Container {
     stopParticleAnim() {
         // if (this.emitter) this.emitter.on = false;
     }
+
+    /**
+     * Enable pointer interaction on a Container by assigning a Rectangle hit area
+     * based on its current bounds. Containers don't have a default hit area in Phaser.
+     */
+    public enablePointerInteraction(useHandCursor: boolean = true): void {
+        const bounds = this.getBounds();
+        const width = Math.max(1, bounds.width);
+        const height = Math.max(1, bounds.height);
+        // Set the local input size and a Rectangle hit area in local space
+        this.setSize(width, height);
+        const rect = new Phaser.Geom.Rectangle(0, 0, width, height);
+        this.setInteractive(rect, Phaser.Geom.Rectangle.Contains);
+        if (useHandCursor && (this as any).input) {
+            // Phaser will switch cursor when hovering this object
+            ((this as any).input).cursor = 'pointer';
+        }
+    }
 }

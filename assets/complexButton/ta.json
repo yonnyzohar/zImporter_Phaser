@@ -1,0 +1,13 @@
+{"frames":{"ExampleBTNDisabledStateBG":{"frame":{"x":0,"y":0,"w":336,"h":156},
+"sourceSize": {"w":336,"h":156}
+},
+"ExampleBTNUpStateBG":{"frame":{"x":337,"y":0,"w":336,"h":156},
+"sourceSize": {"w":336,"h":156}
+},
+"ExampleBTNDownStateBG":{"frame":{"x":674,"y":0,"w":336,"h":156},
+"sourceSize": {"w":336,"h":156}
+},
+"ExampleBTNHoverStateBG":{"frame":{"x":0,"y":157,"w":336,"h":156},
+"sourceSize": {"w":336,"h":156}
+}
+},"meta":{"image": "ta.png","format": "RGBA8888","size": {"w":1010,"h":313},"scale": "1"}}
