@@ -8,8 +8,8 @@
     "children": [
       {
         "portrait": {
-          "x": 316.96,
-          "y": 99.67,
+          "x": 640,
+          "y": 1136,
           "rotation": 0,
           "scaleX": 1,
           "scaleY": 1,
@@ -24,8 +24,8 @@
           }
         },
         "landscape": {
-          "x": 316.96,
-          "y": 99.67,
+          "x": 1136,
+          "y": 640,
           "rotation": 0,
           "scaleX": 1,
           "scaleY": 1,
