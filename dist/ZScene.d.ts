@@ -31,6 +31,7 @@ export declare class ZScene {
     addToResizeMap(mc: ZContainer | ZNineSlice): void;
     removeFromResizeMap(mc: ZContainer): void;
     resize(width: number, height: number): void;
+    load(assetBasePath: string, _loadCompleteFnctn: Function): Promise<void>;
     /**
      * Loads the scene's assets and fonts, then initializes the scene.
      * @param assetBasePath - The base path for assets.
@@ -38,7 +39,6 @@ export declare class ZScene {
      * @param _loadCompleteFnctn - Callback function to invoke when loading is complete.
      */
     loadAssets(assetBasePath: string, placementsObj: SceneData, _loadCompleteFnctn: Function): Promise<void>;
-    load(assetBasePath: string, _loadCompleteFnctn: Function): Promise<void>;
     initScene(_placementsObj: SceneData): void;
     static getAssetType(value: string): any;
     static isAssetType(value: string): value is AssetType;
