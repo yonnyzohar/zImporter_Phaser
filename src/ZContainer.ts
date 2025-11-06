@@ -130,35 +130,45 @@ export class ZContainer extends Phaser.GameObjects.Container {
     }
 
     applyTransform() {
-        if (this._fitToScreen || !this.currentTransform || !this.resizeable) return;
+        if (this._fitToScreen) // if fitToScreen is true, do not apply transform
+        {
+            this.executeFitToScreen();
+            return;
+        }
+        if (!this.currentTransform) return;
+        if (!this.resizeable) return;
+        if (this.parentContainer) {
+            let currentFrame = (this.parentContainer as any).currentFrame;
+            if (currentFrame !== undefined && currentFrame > 0) {
+                return; // do not apply transform if parent timeline is playing
+            }
+        }
 
         this.x = this.currentTransform.x || 0;
         this.y = this.currentTransform.y || 0;
         this.rotation = this.currentTransform.rotation || 0;
         this.alpha = this.currentTransform.alpha ?? 1;
         this.setScale(this.currentTransform.scaleX || 1, this.currentTransform.scaleY || 1);
-        
+
         // Handle pivot - Phaser Containers don't have pivot, so we adjust children positions
         // This mimics PIXI's pivot behavior
-        const pivotX = this.currentTransform.pivotX || 0;
-        const pivotY = this.currentTransform.pivotY || 0;
-        if (pivotX !== 0 || pivotY !== 0) {
-            // Adjust all children to account for pivot
-            this.list.forEach(child => {
-                (child as any).x -= pivotX;
-                (child as any).y -= pivotY;
-            });
-        }
-        
+
+        this.setOrigin();
+
         this.applyAnchor();
     }
 
-    setOrigin(originX: number, originY: number): this {
+    setOrigin() {
+        const pivotX = this.currentTransform.pivotX || 0;
+        const pivotY = this.currentTransform.pivotY || 0;
         this.list.forEach(child => {
-            (child as any).x -= originX;
-            (child as any).y -= originY;
+            let childTransform = (child as any).currentTransform;
+            if (childTransform) {
+                (child as any).x = childTransform.x - pivotX;
+                (child as any).y = childTransform.y - pivotY;
+            }
+
         });
-        return this;
     }
 
     public resize(width: number, height: number, orientation: "portrait" | "landscape") {
@@ -173,10 +183,20 @@ export class ZContainer extends Phaser.GameObjects.Container {
     }
 
     public applyAnchor() {
-        if (this.currentTransform?.isAnchored && this.parentContainer) {
-            let x = (this.currentTransform.anchorPercentage?.x || 0) * this.scene.scale.width;
-            let y = (this.currentTransform.anchorPercentage?.y || 0) * this.scene.scale.height;
-            this.setPosition(x, y);
+        if (this.currentTransform && this.currentTransform.isAnchored && this.parentContainer) {
+            let xPer = this.currentTransform!.anchorPercentage!.x || 0;
+            let yPer = this.currentTransform!.anchorPercentage!.y || 0;
+            let x = xPer * window.innerWidth;
+            let y = yPer * window.innerHeight;
+            const globalPoint = this.getWorldTransformMatrix().transformPoint(x, y);
+            const mat = this.parentContainer.getWorldTransformMatrix();
+            const inv = new Phaser.GameObjects.Components.TransformMatrix();
+            inv.copyFrom(mat);
+            inv.invert();
+            const localPoint = inv.transformPoint(globalPoint.x, globalPoint.y);
+
+            this.x = localPoint.x;
+            this.y = localPoint.y;
         }
     }
 
