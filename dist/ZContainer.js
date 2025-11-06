@@ -110,7 +110,17 @@ export class ZContainer extends Phaser.GameObjects.Container {
         this.rotation = this.currentTransform.rotation || 0;
         this.alpha = this.currentTransform.alpha ?? 1;
         this.setScale(this.currentTransform.scaleX || 1, this.currentTransform.scaleY || 1);
-        this.setOrigin((this.currentTransform.pivotX || 0) / this.width, (this.currentTransform.pivotY || 0) / this.height);
+        // Handle pivot - Phaser Containers don't have pivot, so we adjust children positions
+        // This mimics PIXI's pivot behavior
+        const pivotX = this.currentTransform.pivotX || 0;
+        const pivotY = this.currentTransform.pivotY || 0;
+        if (pivotX !== 0 || pivotY !== 0) {
+            // Adjust all children to account for pivot
+            this.list.forEach(child => {
+                child.x -= pivotX;
+                child.y -= pivotY;
+            });
+        }
         this.applyAnchor();
     }
     setOrigin(originX, originY) {

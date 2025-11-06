@@ -48,19 +48,41 @@ export class ZScene {
         this.resize(window.innerWidth, window.innerHeight);
         const stageAssets = this.data.stage;
         const children = stageAssets?.children;
+        console.log('Loading stage with', children?.length || 0, 'children');
         if (children) {
             for (const child of children) {
                 const tempName = child.name;
+                console.log('Spawning template:', tempName);
                 const mc = this.spawn(tempName);
                 if (mc) {
+                    // Set instance data BEFORE adding to stage (like PIXI version)
                     mc.setInstanceData(child, this.orientation);
                     this.addToResizeMap(mc);
                     this._sceneStage.add(mc);
                     this._sceneStage[mc.name] = mc;
+                    const bounds = mc.getBounds();
+                    console.log('Added to stage:', mc.name, 'visible:', mc.visible, 'alpha:', mc.alpha, 'bounds:', bounds.width, 'x', bounds.height, 'at', mc.x, mc.y);
+                }
+                else {
+                    console.warn('Failed to spawn template:', tempName);
                 }
             }
         }
         this.phaserScene.add.existing(this._sceneStage);
+        console.log('Scene stage added. Total children:', this._sceneStage.list.length);
+        console.log('Scene stage position:', this._sceneStage.x, this._sceneStage.y);
+        console.log('Scene stage scale:', this._sceneStage.scaleX, this._sceneStage.scaleY);
+        console.log('Scene stage visible:', this._sceneStage.visible, 'alpha:', this._sceneStage.alpha);
+        console.log('Scene stage bounds:', this._sceneStage.getBounds());
+        // Log first child details for debugging
+        if (this._sceneStage.list.length > 0) {
+            const firstChild = this._sceneStage.list[0];
+            console.log('First child:', firstChild.name, 'type:', firstChild.constructor.name, 'children:', firstChild.list?.length || 0);
+            if (firstChild.list && firstChild.list.length > 0) {
+                const firstGrandchild = firstChild.list[0];
+                console.log('First grandchild:', firstGrandchild.name || 'unnamed', 'type:', firstGrandchild.constructor.name, 'visible:', firstGrandchild.visible, 'alpha:', firstGrandchild.alpha);
+            }
+        }
         window.game = this._sceneStage;
         this.resize(window.innerWidth, window.innerHeight);
     }
@@ -115,9 +137,30 @@ export class ZScene {
             const atlasKey = 'sceneAtlas';
             const atlasJsonUrl = assetBasePath + "ta.json?rnd=" + Math.random();
             const atlasImageUrl = assetBasePath + "ta.png?rnd=" + Math.random();
+            // Add error handling for failed loads
+            this.phaserScene.load.once('filecomplete-image-' + atlasKey, () => {
+                console.log('Atlas image loaded:', atlasKey);
+            });
+            this.phaserScene.load.once('filecomplete-json-' + atlasKey, () => {
+                console.log('Atlas JSON loaded:', atlasKey);
+            });
+            this.phaserScene.load.once('loaderror', (file) => {
+                console.error('Load error:', file.key, file.url, file.error);
+            });
             this.phaserScene.load.atlas(atlasKey, atlasImageUrl, atlasJsonUrl);
             this.phaserScene.load.once('complete', () => {
-                this.scene = this.phaserScene.textures.get(atlasKey);
+                const texture = this.phaserScene.textures.get(atlasKey);
+                if (!texture) {
+                    console.error('Atlas texture not found after load complete:', atlasKey);
+                    return;
+                }
+                // Verify texture has frames
+                const frameCount = Object.keys(texture.frames).length;
+                console.log('Atlas loaded:', atlasKey, 'frames:', frameCount);
+                if (frameCount === 0) {
+                    console.warn('Atlas has no frames! Check JSON format.');
+                }
+                this.scene = texture;
                 this.sceneName = atlasKey;
                 this.initScene(placementsObj);
                 _loadCompleteFnctn();
@@ -177,8 +220,10 @@ export class ZScene {
     spawn(tempName) {
         const templates = this.data.templates;
         const baseNode = templates[tempName];
-        if (!baseNode)
+        if (!baseNode) {
+            console.warn('Template not found:', tempName);
             return;
+        }
         let mc;
         const frames = this.getChildrenFrames(tempName);
         if (Object.keys(frames).length > 0) {
@@ -191,7 +236,8 @@ export class ZScene {
             mc.gotoAndStop(0);
         }
         else {
-            mc = new (ZScene.getAssetType(baseNode.type) || ZContainer)(this.phaserScene);
+            const AssetClass = ZScene.getAssetType(baseNode.type) || ZContainer;
+            mc = new AssetClass(this.phaserScene);
             this.createAsset(mc, baseNode);
             mc.init();
         }
@@ -269,12 +315,35 @@ export class ZScene {
                 const spriteNode = childNode;
                 const frameKey = spriteNode.name.replace(/(_IMG|_9S)$/, "");
                 if (this.usesAtlas) {
+                    const texture = this.scene;
+                    if (!texture) {
+                        console.error('Cannot create sprite - atlas texture not loaded');
+                        continue;
+                    }
+                    const hasFrame = texture.has(frameKey);
+                    if (!hasFrame) {
+                        console.warn('Frame not found in atlas:', frameKey, 'Available frames:', Object.keys(texture.frames).slice(0, 10).join(', '));
+                    }
+                    else {
+                        console.log('Creating sprite:', frameKey, 'at', spriteNode.x, spriteNode.y, 'size:', spriteNode.width, spriteNode.height);
+                    }
                     asset = this.phaserScene.add.sprite(spriteNode.x, spriteNode.y, this.sceneName, frameKey);
+                    if (!asset) {
+                        console.error('Failed to create sprite for:', frameKey);
+                        continue;
+                    }
                 }
                 else {
                     asset = this.phaserScene.add.sprite(spriteNode.x, spriteNode.y, frameKey);
                 }
                 asset.setDisplaySize(spriteNode.width, spriteNode.height);
+                // Handle pivot like PIXI version - set origin based on pivot
+                const pivotX = spriteNode.pivotX || 0;
+                const pivotY = spriteNode.pivotY || 0;
+                if (spriteNode.width && spriteNode.height && (pivotX !== 0 || pivotY !== 0)) {
+                    asset.setOrigin(pivotX / spriteNode.width, pivotY / spriteNode.height);
+                }
+                console.log('Sprite created:', asset.name || frameKey, 'visible:', asset.visible, 'alpha:', asset.alpha, 'size:', asset.width, asset.height);
                 mc.add(asset);
                 mc[spriteNode.name] = asset;
             }

@@ -393,11 +393,11 @@ export class ZScene {
 
           // Pivot conversion: PIXI pivot is in pixels; Phaser origin is normalized.
           // To emulate PIXI pivot (optional):
-          if (typeof textNode.pivotX === 'number' && typeof textNode.pivotY === 'number') {
-            const width = tf.width;
-            const height = tf.height;
-            tf.setOrigin(textNode.pivotX / width, textNode.pivotY / height);
-          }
+          //if (typeof textNode.pivotX === 'number' && typeof textNode.pivotY === 'number') {
+          //  const width = tf.width;
+          //  const height = tf.height;
+          //  tf.setOrigin(textNode.pivotX / width, textNode.pivotY / height);
+          //}
 
           // Letter spacing – Phaser doesn’t natively support this; approximate via setStyle on each render if necessary.
           // if (typeof textNode.letterSpacing === 'number') { ... custom rendering }
