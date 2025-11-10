@@ -446,6 +446,7 @@ export class ZScene {
         const nineSlice = new ZNineSlice(this.phaserScene, 0, 0, textureKeyOrObj, frame, nineSliceData, this.orientation);
         mc.add(nineSlice);
         (mc as any)[nineSliceData.name] = nineSlice;
+        nineSlice.setDisplaySize(nineSliceData.width, nineSliceData.height);
         nineSlice.setOrigin(0, 0);
         this.addToResizeMap(nineSlice);
       }
