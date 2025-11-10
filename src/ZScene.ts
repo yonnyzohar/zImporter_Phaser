@@ -315,6 +315,13 @@ export class ZScene {
     for (const childNode of baseNode.children) {
       const type = childNode.type;
       let asset: any;
+      /*
+      await new Promise<void>(async (resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 1000);
+
+      });*/
 
       // Text (BitmapText preferred if font is available)
       if (type === "textField" || type === "bmpTextField") {

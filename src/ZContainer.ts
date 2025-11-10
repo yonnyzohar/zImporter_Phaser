@@ -23,6 +23,7 @@ export class ZContainer extends Phaser.GameObjects.Container {
     originalTextWidth?: number;
     originalFontSize?: number;
     fixedBoxSize?: boolean;
+    private graphics?: Phaser.GameObjects.Graphics;
 
     constructor(scene: Phaser.Scene, x = 0, y = 0, children?: Phaser.GameObjects.GameObject[]) {
         super(scene, x, y, children);
@@ -144,8 +145,19 @@ export class ZContainer extends Phaser.GameObjects.Container {
             }
         }
 
-        this.x = this.currentTransform.x || 0;
-        this.y = this.currentTransform.y || 0;
+        let parentContainer = this.parentContainer as ZContainer;
+        if (parentContainer && parentContainer.currentTransform) {
+            let parentPivotX = parentContainer.currentTransform.pivotX || 0;
+            let parentPivotY = parentContainer.currentTransform.pivotY || 0;
+
+            this.x = ((this.currentTransform.x - parentPivotX) || 0);
+            this.y = ((this.currentTransform.y - parentPivotY) || 0);
+        }
+        else {
+            this.x = this.currentTransform.x || 0;
+            this.y = this.currentTransform.y || 0;
+        }
+
         this.rotation = this.currentTransform.rotation || 0;
         this.alpha = this.currentTransform.alpha ?? 1;
         this.setScale(this.currentTransform.scaleX || 1, this.currentTransform.scaleY || 1);
@@ -156,16 +168,38 @@ export class ZContainer extends Phaser.GameObjects.Container {
         this.setOrigin();
 
         this.applyAnchor();
+        /*
+        if (!this.graphics) {
+            this.graphics = this.scene.add.graphics();
+            this.graphics.setDepth(9999);
+
+        }
+
+        this.graphics.clear();
+        this.graphics.lineStyle(2, 0xffffff * Math.random(), 1);
+        // Get container bounds in world coordinates
+        const bounds = this.getBounds();
+
+        // Draw the rectangle around it
+        this.graphics.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+        this.graphics.strokeCircle(this.x, this.y, 5);
+        */
     }
 
     setOrigin() {
-        const pivotX = this.currentTransform.pivotX || 0;
-        const pivotY = this.currentTransform.pivotY || 0;
+        const pivotX = (this.currentTransform.pivotX) || 0;
+        const pivotY = (this.currentTransform.pivotY) || 0;
+        console.log("Pivot:", pivotX, pivotY);
+
         this.list.forEach(child => {
             let childTransform = (child as any).currentTransform;
             if (childTransform) {
                 (child as any).x = childTransform.x - pivotX;
                 (child as any).y = childTransform.y - pivotY;
+            }
+            else {
+                (child as any).x = -pivotX;
+                (child as any).y = -pivotY;
             }
 
         });

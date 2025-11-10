@@ -19,6 +19,7 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     originalTextWidth?: number;
     originalFontSize?: number;
     fixedBoxSize?: boolean;
+    private graphics?;
     constructor(scene: Phaser.Scene, x?: number, y?: number, children?: Phaser.GameObjects.GameObject[]);
     getChildByName(name: string): Phaser.GameObjects.GameObject | null;
     get(childName: string): ZContainer | null;
