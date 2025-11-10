@@ -387,20 +387,7 @@ export class ZScene {
           }
 
           // Set origin (anchors in PIXI map to origin in Phaser)
-          if (typeof textNode.textAnchorX === 'number' && typeof textNode.textAnchorY === 'number') {
-            tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
-          }
-
-          // Pivot conversion: PIXI pivot is in pixels; Phaser origin is normalized.
-          // To emulate PIXI pivot (optional):
-          //if (typeof textNode.pivotX === 'number' && typeof textNode.pivotY === 'number') {
-          //  const width = tf.width;
-          //  const height = tf.height;
-          //  tf.setOrigin(textNode.pivotX / width, textNode.pivotY / height);
-          //}
-
-          // Letter spacing – Phaser doesn’t natively support this; approximate via setStyle on each render if necessary.
-          // if (typeof textNode.letterSpacing === 'number') { ... custom rendering }
+          tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
 
           tf.setName(textNode.name);
           (mc as any)[textNode.name] = tf;
@@ -435,12 +422,10 @@ export class ZScene {
         }
         asset.setDisplaySize(spriteNode.width, spriteNode.height);
         // Handle pivot like PIXI version - set origin based on pivot
-        const pivotX = (spriteNode as any).pivotX || 0;
-        const pivotY = (spriteNode as any).pivotY || 0;
-        if (spriteNode.width && spriteNode.height && (pivotX !== 0 || pivotY !== 0)) {
-          asset.setOrigin(pivotX / spriteNode.width, pivotY / spriteNode.height);
-        }
-        console.log('Sprite created:', asset.name || frameKey, 'visible:', asset.visible, 'alpha:', asset.alpha, 'size:', asset.width, asset.height);
+        //const pivotX = (spriteNode as any).pivotX || 0;
+        //const pivotY = (spriteNode as any).pivotY || 0;
+        //asset.setOrigin(pivotX / spriteNode.width, pivotY / spriteNode.height);
+        asset.setOrigin(0, 0);
         mc.add(asset);
         (mc as any)[spriteNode.name] = asset;
       }
@@ -454,6 +439,7 @@ export class ZScene {
         const nineSlice = new ZNineSlice(this.phaserScene, 0, 0, textureKeyOrObj, frame, nineSliceData, this.orientation);
         mc.add(nineSlice);
         (mc as any)[nineSliceData.name] = nineSlice;
+        nineSlice.setOrigin(0, 0);
         this.addToResizeMap(nineSlice);
       }
 

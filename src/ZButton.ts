@@ -75,7 +75,7 @@ export class ZButton extends ZContainer {
         if (this.topLabelContainer) {
             this.labelState = "single";
             if (this.topLabelContainer2) this.topLabelContainer2.setVisible(false);
-            this.topLabelContainer.setVisible(false);
+            //this.topLabelContainer.setVisible(false);
         } else {
             if (this.overState && this.disabledState && this.downState && this.upState) {
                 if (
