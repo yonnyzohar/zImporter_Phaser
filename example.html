@@ -61,6 +61,7 @@
 
         // Start Phaser game
         const game = new Phaser.Game(config);
+        globalThis.__PHASER_GAME__ = game;
 
         // Handle window resize
         window.addEventListener('resize', () => {

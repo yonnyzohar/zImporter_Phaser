@@ -189,7 +189,6 @@ export class ZContainer extends Phaser.GameObjects.Container {
     setOrigin() {
         const pivotX = (this.currentTransform.pivotX) || 0;
         const pivotY = (this.currentTransform.pivotY) || 0;
-        console.log("Pivot:", pivotX, pivotY);
 
         this.list.forEach(child => {
             let childTransform = (child as any).currentTransform;
