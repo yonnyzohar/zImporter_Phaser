@@ -200,6 +200,11 @@ export class ZButton extends ZContainer {
         updateHitArea(this);
     }
 
+    applyTransform() {
+        super.applyTransform();
+        updateHitArea(this);
+    }
+
 
     setLabel(name: string): void {
         if (this.labelState === "single" && this.topLabelContainer) {

@@ -25,6 +25,7 @@ export declare class ZButton extends ZContainer {
     private labelState;
     getType(): string;
     init(_labelStr?: string): void;
+    applyTransform(): void;
     setLabel(name: string): void;
     setLabel2(name: string): void;
     setFixedTextSize(fixed: boolean): void;
