@@ -7,12 +7,13 @@ import { ZTimeline } from "./ZTimeline";
  * Only one child is visible at a time; all others are hidden.
  * Supports ZTimeline children (play/stop automatically on state switch).
  */
+
 export class ZState extends ZContainer {
-    protected currentState: ZContainer | null = null;
+    public currentState: ZContainer | null = null;
 
     // Called once all children are added to the container
     public init(): void {
-        this.setState("idle");
+        this.setViewState("idle");
     }
 
     public getCurrentState(): ZContainer | null {
@@ -23,44 +24,42 @@ export class ZState extends ZContainer {
         return this.getChildByName(str) !== null;
     }
 
-    public getAllStateNames(): string[] {
-        return this.list.map((child) => child.name);
-    }
-
     public setViewState(str: string): ZContainer | null {
-        let chosenChild: ZContainer | null = this.getChildByName(str) as ZContainer;
-
+        let chosenChild = this.getChildByName(str) as ZContainer;
         if (!chosenChild) {
             chosenChild = this.getChildByName("idle") as ZContainer;
-            if (!chosenChild) {
+            if (!chosenChild && this.list.length > 0) {
                 chosenChild = this.list[0] as ZContainer;
             }
         }
-
-        // Hide all children and stop timelines
-        for (let i = 0; i < this.list.length; i++) {
-            const child = this.list[i] as Phaser.GameObjects.Container;
-            child.visible = false;
-            if (child instanceof ZTimeline) {
-                child.stop();
+        if (this.list) {
+            for (let i = 0; i < this.list.length; i++) {
+                let child = this.list[i];
+                (child as Phaser.GameObjects.Container).visible = false;
+                if (child instanceof ZTimeline) {
+                    (child as ZTimeline).stop();
+                }
             }
         }
-
-        // Show chosen child and play timeline if applicable
         if (chosenChild) {
             chosenChild.visible = true;
-            if (chosenChild instanceof ZTimeline) {
-                chosenChild.play();
+            this.currentState = chosenChild;
+            if (chosenChild.parentContainer) {
+                chosenChild.parentContainer.bringToTop(chosenChild);
             }
+            if (chosenChild instanceof ZTimeline) {
+                (chosenChild as ZTimeline).play();
+            }
+            return chosenChild;
         }
+        return null;
+    }
 
-        this.currentState = chosenChild;
+    public getAllStateNames(): (string | null)[] {
+        return this.list.map((child) => child.name);
+    }
 
-        // Bring chosen child to top of container
-        if (chosenChild && chosenChild.parentContainer) {
-            chosenChild.parentContainer.bringToTop(chosenChild);
-        }
-
-        return chosenChild;
+    public getType(): string {
+        return "ZState";
     }
 }

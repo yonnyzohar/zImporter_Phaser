@@ -1,40 +1,47 @@
 import Phaser from "phaser";
 import { ZContainer } from "./ZContainer";
 
+
 export class ZSlider extends ZContainer {
     dragging = false;
     sliderWidth: number | undefined = 0;
     callback?: (t: number) => void;
+    onDragStartBinded: any;
+    onDragEndBinded: any;
+    onDragBinded: any;
 
-    private handle!: ZContainer;
-    private track!: ZContainer;
+    handle!: ZContainer;
+    track!: ZContainer;
 
     init() {
         super.init();
 
         this.handle = this.getByName('handle') as ZContainer;
         this.track = this.getByName('track') as ZContainer;
-
         if (!this.handle || !this.track) {
             console.error("ZSlider is missing handle or track");
             return;
         }
 
         this.sliderWidth = this.track.width;
+        this.onDragStartBinded = this.onDragStart.bind(this);
+        this.onDragEndBinded = this.onDragEnd.bind(this);
+        this.onDragBinded = this.onDrag.bind(this);
 
-        this.handle.setInteractive({ draggable: true, cursor: 'pointer' });
+        this.handle.setInteractive({ cursor: 'pointer' });
+        this.handle.on('pointerdown', this.onDragStartBinded);
+        this.handle.on('touchstart', this.onDragStartBinded);
+    }
 
-        this.handle.on(Phaser.Input.Events.DRAG_START, this.onDragStart, this);
-        this.handle.on(Phaser.Input.Events.DRAG, this.onDrag, this);
-        this.handle.on(Phaser.Input.Events.DRAG_END, this.onDragEnd, this);
-
-        // Make the handle draggable within the track bounds
-        this.scene.input.setDraggable(this.handle);
+    public getType(): string {
+        return "ZSlider";
     }
 
     setHandlePosition(t: number) {
         this.handle.x = t * this.sliderWidth!;
-        if (this.callback) this.callback(t);
+        if (this.callback) {
+            this.callback(t);
+        }
     }
 
     setCallback(callback: (t: number) => void) {
@@ -45,21 +52,48 @@ export class ZSlider extends ZContainer {
         this.callback = undefined;
     }
 
-    private onDragStart(pointer: Phaser.Input.Pointer) {
+    onDragStart(e: any) {
         this.dragging = true;
+        this.handle.on('pointerup', this.onDragEndBinded);
+        this.handle.on('pointerupoutside', this.onDragEndBinded);
+        this.handle.on('touchend', this.onDragEndBinded);
+        this.handle.on('touchendoutside', this.onDragEndBinded);
+        window.addEventListener('pointerup', this.onDragEndBinded);
+        window.addEventListener('touchend', this.onDragEndBinded);
+        window.addEventListener('pointermove', this.onDragBinded);
+        window.addEventListener('touchmove', this.onDragBinded);
     }
 
-    private onDrag(pointer: Phaser.Input.Pointer, dragX: number, dragY: number) {
-        // Local coordinates relative to the slider container
-        const localX = Phaser.Math.Clamp(dragX - this.x, 0, this.sliderWidth!);
-
-        this.handle.x = localX;
-
-        const t = this.handle.x / this.sliderWidth!;
-        if (this.callback) this.callback(t);
-    }
-
-    private onDragEnd(pointer: Phaser.Input.Pointer) {
+    onDragEnd(e: any) {
         this.dragging = false;
+        this.handle.off('pointerup', this.onDragEndBinded);
+        this.handle.off('pointerupoutside', this.onDragEndBinded);
+        this.handle.off('touchend', this.onDragEndBinded);
+        this.handle.off('touchendoutside', this.onDragEndBinded);
+        window.removeEventListener('pointerup', this.onDragEndBinded);
+        window.removeEventListener('touchend', this.onDragEndBinded);
+        window.removeEventListener('pointermove', this.onDragBinded);
+        window.removeEventListener('touchmove', this.onDragBinded);
+    }
+
+    onDrag(e: any): void {
+        let clientX: number | undefined;
+        if (e && e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+        } else if (e && typeof e.clientX === 'number') {
+            clientX = e.clientX;
+        }
+        if (clientX === undefined) return;
+
+        // Convert global X to local X in handle's parent
+        const parent = this.handle.parentContainer || this;
+        const bounds = parent.getBounds();
+        const localX = Phaser.Math.Clamp(clientX - bounds.x, 0, this.sliderWidth!);
+        this.handle.x = localX;
+        const t = this.handle.x / this.sliderWidth!;
+        if (this.callback) {
+            this.callback(t);
+        }
+        if (e.stopPropagation) e.stopPropagation();
     }
 }

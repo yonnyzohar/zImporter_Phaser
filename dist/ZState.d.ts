@@ -5,11 +5,12 @@ import { ZContainer } from "./ZContainer";
  * Supports ZTimeline children (play/stop automatically on state switch).
  */
 export declare class ZState extends ZContainer {
-    protected currentState: ZContainer | null;
+    currentState: ZContainer | null;
     init(): void;
     getCurrentState(): ZContainer | null;
     hasState(str: string): boolean;
-    getAllStateNames(): string[];
     setViewState(str: string): ZContainer | null;
+    getAllStateNames(): (string | null)[];
+    getType(): string;
 }
 //# sourceMappingURL=ZState.d.ts.map
