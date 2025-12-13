@@ -43,6 +43,103 @@ export class ZScene {
 
   }
 
+  /**
+   * Destroys the scene and its assets, freeing resources.
+   */
+  async destroy(): Promise<void> {
+    // Remove all children from the stage
+    if (this._sceneStage) {
+      this._sceneStage.removeAll(true);
+      if (this._sceneStage.scene) {
+        this._sceneStage.scene.children.remove(this._sceneStage);
+      }
+    }
+    // Remove textures if loaded
+    if (this.sceneName && this.phaserScene.textures.exists(this.sceneName)) {
+      this.phaserScene.textures.remove(this.sceneName);
+    }
+    // Optionally clear bitmap fonts
+    // (Phaser does not provide a direct API to remove bitmap fonts, but you can clear cache if needed)
+  }
+
+  /**
+   * Loads a bitmap font from XML and creates a bitmap text object.
+   * @param xmlUrl - The URL to the XML font data.
+   * @param textToDisplay - The text to display.
+   * @param fontName - The name of the font.
+   * @param fontSize - The size of the font.
+   * @param callback - Callback to invoke when the font is loaded.
+   * @returns A promise that resolves when the font is loaded.
+   */
+  async createBitmapTextFromXML(
+    xmlUrl: string,
+    textToDisplay: string,
+    fontName: string,
+    fontSize: number,
+    callback: Function
+  ) {
+    // Load the XML font data
+    const response = await fetch(xmlUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch XML font data: ${response.statusText}`);
+    }
+    const xmlData = await response.text();
+    // Parse XML to get the page file
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlData, "text/xml");
+    const pageElement = xmlDoc.querySelector("page");
+    if (!pageElement) {
+      throw new Error("Page element not found in XML");
+    }
+    const fileAttribute = pageElement.getAttribute("file");
+    if (!fileAttribute) {
+      throw new Error("Page file attribute not found in XML");
+    }
+    const textureUrl: string = this.assetBasePath + fileAttribute;
+    await this.loadTexture(textureUrl);
+    // Phaser will have loaded the bitmap font if it was queued in loadAssets
+    if (this.phaserScene.cache.bitmapFont.exists(fontName)) {
+      callback();
+    }
+    return null;
+  }
+
+  /**
+   * Loads a texture from a given URL.
+   * @param textureUrl - The URL of the texture.
+   * @returns A promise that resolves to the loaded Phaser.Texture.
+   */
+  loadTexture(textureUrl: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Phaser loads textures via the loader, so we add and start loading
+      const key = 'dynamic_' + Math.random().toString(36).substr(2, 9);
+      this.phaserScene.load.image(key, textureUrl);
+      this.phaserScene.load.once('filecomplete-image-' + key, () => {
+        resolve();
+      });
+      this.phaserScene.load.once('loaderror', (file: any) => {
+        if (file.key === key) reject(new Error('Failed to load texture.'));
+      });
+      this.phaserScene.load.start();
+    });
+  }
+
+  /**
+   * Applies visual filters (such as drop shadow) to a Phaser container or text.
+   * @param obj - The object containing filter data.
+   * @param tf - The Phaser GameObject to apply filters to.
+   */
+  applyFilters(obj: any, tf: Phaser.GameObjects.GameObject) {
+    // Phaser does not support filters natively like Pixi, but you can use pipelines or shaders.
+    // This is a stub for future custom pipeline integration.
+    if (obj.filters) {
+      // Example: log filters for debugging
+      for (const filter of obj.filters) {
+        console.log('Filter requested:', filter.type, filter);
+      }
+    }
+  }
+
   public get sceneStage() {
     return this._sceneStage;
   }
@@ -61,12 +158,10 @@ export class ZScene {
 
     const stageAssets = this.data.stage;
     const children = stageAssets?.children;
-    console.log('Loading stage with', children?.length || 0, 'children');
 
     if (children) {
       for (const child of children) {
         const tempName = child.name;
-        console.log('Spawning template:', tempName);
         const mc = this.spawn(tempName);
         if (mc) {
           // Set instance data BEFORE adding to stage (like PIXI version)
@@ -83,19 +178,12 @@ export class ZScene {
     }
 
     this.phaserScene.add.existing(this._sceneStage);
-    console.log('Scene stage added. Total children:', this._sceneStage.list.length);
-    console.log('Scene stage position:', this._sceneStage.x, this._sceneStage.y);
-    console.log('Scene stage scale:', this._sceneStage.scaleX, this._sceneStage.scaleY);
-    console.log('Scene stage visible:', this._sceneStage.visible, 'alpha:', this._sceneStage.alpha);
-    console.log('Scene stage bounds:', this._sceneStage.getBounds());
 
     // Log first child details for debugging
     if (this._sceneStage.list.length > 0) {
       const firstChild = this._sceneStage.list[0] as any;
-      console.log('First child:', firstChild.name, 'type:', firstChild.constructor.name, 'children:', firstChild.list?.length || 0);
       if (firstChild.list && firstChild.list.length > 0) {
         const firstGrandchild = firstChild.list[0];
-        console.log('First grandchild:', firstGrandchild.name || 'unnamed', 'type:', firstGrandchild.constructor.name, 'visible:', firstGrandchild.visible, 'alpha:', firstGrandchild.alpha);
       }
     }
 
@@ -230,16 +318,23 @@ export class ZScene {
       }
     });
 
-    // Optional: load bitmap fonts if provided (expects .png and .xml or .fnt next to each other)
+    // Load bitmap fonts if provided (expects .png and .fnt next to each other)
     if ((placementsObj as any).fonts && (placementsObj as any).fonts.length > 0) {
-      try {
-        for (const fontName of (placementsObj as any).fonts as string[]) {
-          const pngUrl = assetBasePath + fontName + '.png';
-          const xmlUrl = assetBasePath + fontName + '.fnt';
-          // Phaser will ignore if keys duplicate
-          this.phaserScene.load.bitmapFont(fontName, pngUrl, xmlUrl);
-        }
-      } catch { }
+      let fontsLoaded = 0;
+      const fonts = (placementsObj as any).fonts as string[];
+      for (const fontName of fonts) {
+        const pngUrl = assetBasePath + fontName + '.png';
+        const xmlUrl = assetBasePath + fontName + '.fnt';
+        // Phaser will ignore if keys duplicate, but we want to ensure font is loaded before continuing
+        this.phaserScene.load.bitmapFont(fontName, pngUrl, xmlUrl);
+      }
+      this.phaserScene.load.once('complete', () => {
+        this.sceneName = 'images';
+        this.initScene(placementsObj);
+        _loadCompleteFnctn();
+      });
+      this.phaserScene.load.start();
+      return;
     }
 
     this.phaserScene.load.once('complete', () => {
@@ -323,8 +418,8 @@ export class ZScene {
 
       });*/
 
-      // Text (BitmapText preferred if font is available)
-      if (type === "textField" || type === "bmpTextField") {
+      // Text (BitmapText preferred if font is available or uniqueFontName is present)
+      if (type === "textField" || type === "bmpTextField" || type === "bitmapText") {
         const textNode = childNode as TextData & {
           textAnchorX?: number; textAnchorY?: number;
           pivotX?: number; pivotY?: number;
@@ -332,14 +427,17 @@ export class ZScene {
           wordWrap?: boolean; wordWrapWidth?: number; breakWords?: boolean;
           leading?: number; letterSpacing?: number; padding?: number;
           fontWeight?: string;
+          uniqueFontName?: string;
         };
 
-        const hasBitmap = this.phaserScene.cache.bitmapFont.exists(textNode.fontName as string);
+        // Prefer uniqueFontName if present (Pixi logic)
+        const fontKey = textNode.uniqueFontName || textNode.fontName;
+        const hasBitmap = fontKey && this.phaserScene.cache.bitmapFont.exists(fontKey as string);
         if (hasBitmap) {
           const tf = this.phaserScene.add.bitmapText(
             textNode.x,
             textNode.y,
-            textNode.fontName as string,
+            fontKey as string,
             textNode.text || "",
             (textNode.size as number) || undefined
           );
@@ -399,7 +497,6 @@ export class ZScene {
           tf.setName(textNode.name);
           (mc as any)[textNode.name] = tf;
           mc.add(tf);
-
         }
       }
 
@@ -486,15 +583,6 @@ export class ZScene {
         //console.log("instanceof", asset instanceof ZTimeline);
       }
 
-      // Spine
-      /*
-      if (type === "spine") {
-        const spineData = childNode as SpineData;
-        const zSpine = new ZSpine(spineData, this.assetBasePath);
-        await zSpine.load(this.phaserScene, (spine: any) => {
-          mc.add(spine);
-        });
-      }*/
 
       // Child templates
       const childTemplate = this.data.templates[childNode.name];

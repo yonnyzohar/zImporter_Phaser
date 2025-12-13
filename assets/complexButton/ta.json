@@ -1,13 +1,13 @@
-{"frames":{"ExampleBTNDisabledStateBG":{"frame":{"x":0,"y":0,"w":336,"h":156},
-"sourceSize": {"w":336,"h":156}
+{"frames":{"ExampleBTNDisabledState":{"frame":{"x":0,"y":0,"w":615,"h":298},
+"sourceSize": {"w":615,"h":298}
 },
-"ExampleBTNUpStateBG":{"frame":{"x":337,"y":0,"w":336,"h":156},
-"sourceSize": {"w":336,"h":156}
+"ExampleBTNUpState":{"frame":{"x":0,"y":299,"w":609,"h":290},
+"sourceSize": {"w":609,"h":290}
 },
-"ExampleBTNDownStateBG":{"frame":{"x":674,"y":0,"w":336,"h":156},
-"sourceSize": {"w":336,"h":156}
+"ExampleBTNOverState":{"frame":{"x":0,"y":590,"w":609,"h":290},
+"sourceSize": {"w":609,"h":290}
 },
-"ExampleBTNHoverStateBG":{"frame":{"x":0,"y":157,"w":336,"h":156},
-"sourceSize": {"w":336,"h":156}
+"ExampleBTNDownState":{"frame":{"x":0,"y":881,"w":609,"h":290},
+"sourceSize": {"w":609,"h":290}
 }
-},"meta":{"image": "ta.png","format": "RGBA8888","size": {"w":1010,"h":313},"scale": "1"}}
+},"meta":{"image": "ta.png","format": "RGBA8888","size": {"w":615,"h":1171},"scale": "1"}}

@@ -17,6 +17,32 @@ export declare class ZScene {
     private phaserScene;
     private usesAtlas;
     constructor(_sceneId: string, phaserScene: Phaser.Scene);
+    /**
+     * Destroys the scene and its assets, freeing resources.
+     */
+    destroy(): Promise<void>;
+    /**
+     * Loads a bitmap font from XML and creates a bitmap text object.
+     * @param xmlUrl - The URL to the XML font data.
+     * @param textToDisplay - The text to display.
+     * @param fontName - The name of the font.
+     * @param fontSize - The size of the font.
+     * @param callback - Callback to invoke when the font is loaded.
+     * @returns A promise that resolves when the font is loaded.
+     */
+    createBitmapTextFromXML(xmlUrl: string, textToDisplay: string, fontName: string, fontSize: number, callback: Function): Promise<null>;
+    /**
+     * Loads a texture from a given URL.
+     * @param textureUrl - The URL of the texture.
+     * @returns A promise that resolves to the loaded Phaser.Texture.
+     */
+    loadTexture(textureUrl: string): Promise<void>;
+    /**
+     * Applies visual filters (such as drop shadow) to a Phaser container or text.
+     * @param obj - The object containing filter data.
+     * @param tf - The Phaser GameObject to apply filters to.
+     */
+    applyFilters(obj: any, tf: Phaser.GameObjects.GameObject): void;
     get sceneStage(): Phaser.GameObjects.Container;
     setOrientation(): void;
     static getSceneById(sceneId: string): ZScene | undefined;
