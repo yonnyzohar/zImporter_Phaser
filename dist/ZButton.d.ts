@@ -1,6 +1,6 @@
 import { ZContainer } from "./ZContainer";
 export declare const RemoveClickListener: (container: Phaser.GameObjects.Container) => void;
-export declare const AttachClickListener: (container: Phaser.GameObjects.Container, callback: () => void) => void;
+export declare const AttachClickListener: (container: Phaser.GameObjects.Container, pressCallback?: () => void, longPressCallback?: () => void) => void;
 export declare class ZButton extends ZContainer {
     topLabelContainer2?: ZContainer;
     topLabelContainer?: ZContainer;
@@ -18,24 +18,23 @@ export declare class ZButton extends ZContainer {
     disabledLabelContainer2?: ZContainer;
     callback?: () => void;
     longPressCallback?: () => void;
-    longPressTimer: any;
-    LONG_PRESS_DURATION: number;
-    longPressFired: boolean;
     private labelState;
+    getType(): string;
     init(_labelStr?: string): void;
-    private onPointerDown;
-    private onPointerUp;
     setLabel(name: string): void;
     setLabel2(name: string): void;
+    setFixedTextSize(fixed: boolean): void;
+    makeSingleLine(): void;
     setCallback(func: () => void): void;
     removeCallback(): void;
     setLongPressCallback(func: () => void): void;
     removeLongPressCallback(): void;
-    private onClicked;
+    onClicked(): void;
     enable(): void;
     disable(): void;
-    private onDown;
-    private onOut;
-    private onOver;
+    hideAllStates(): void;
+    onDown(): void;
+    onOut(): void;
+    onOver(): void;
 }
 //# sourceMappingURL=ZButton.d.ts.map
