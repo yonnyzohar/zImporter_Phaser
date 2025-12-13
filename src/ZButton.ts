@@ -6,11 +6,12 @@ type LabelState = "single" | "multi" | "none";
 
 // Remove all click listeners (pointerdown, pointerup, etc.)
 export const RemoveClickListener = (container: Phaser.GameObjects.Container): void => {
-    container.removeAllListeners && container.removeAllListeners();
-    container.off && container.off("pointerdown");
-    container.off && container.off("pointerup");
-    container.off && container.off("pointerout");
-    container.off && container.off("pointerover");
+    container.off('mouseup');
+    container.off('touchend');
+    container.off('touchendoutside');
+    container.off('mouseupoutside');
+    container.off('mousedown');
+    container.off('touchstart');
 };
 
 
@@ -61,10 +62,11 @@ export function updateHitArea(container: Phaser.GameObjects.Container & { _hitAr
     g.setInteractive(new Phaser.Geom.Rectangle(minX, minY, width, height), Phaser.Geom.Rectangle.Contains);
     g.input!.cursor = 'pointer'; // Set the cursor style
     // Forward pointer events to this button
-    g.on("pointerdown", (e: any) => container.emit("pointerdown", e));
-    g.on("pointerup", (e: any) => container.emit("pointerup", e));
-    g.on("pointerover", (e: any) => container.emit("pointerover", e));
-    g.on("pointerout", (e: any) => container.emit("pointerout", e));
+    const events = ['pointerdown', 'pointerup', 'pointerover', 'pointerout', 'mouseup', 'touchend', 'touchendoutside', 'mouseupoutside', 'mousedown', 'touchstart'];
+    for (let ev of events) {
+        g.on(ev, (e: any) => container.emit(ev, e));
+    }
+
     // Add to container at the bottom
     container.add(g);
     container._hitAreaGraphics = g;
@@ -79,7 +81,7 @@ export const AttachClickListener = (
 ): void => {
     // Calculate bounds based on children and set the hit area
     // Calculate bounds relative to (0,0) to ignore origin/pivot
-    updateHitArea(container);
+
 
     let longPressTimer: any = null;
     const LONG_PRESS_DURATION = 500;
@@ -98,6 +100,12 @@ export const AttachClickListener = (
             longPressFired = true;
             longPressCallback && longPressCallback();
         }, LONG_PRESS_DURATION);
+        container.on('pointerupoutside', onPointerUp);
+        container.on('pointerup', onPointerUp);
+        container.on('mouseup', onPointerUp);
+        container.on('touchend', onPointerUp);
+        container.on('touchendoutside', onPointerUp);
+        container.on('mouseupoutside', onPointerUp);
     };
 
     const onPointerUp = (pointer: Phaser.Input.Pointer) => {
@@ -116,15 +124,18 @@ export const AttachClickListener = (
             pressCallback && pressCallback();
         }
 
-        container.on("pointerdown", onPointerDown);
-        container.on("pointerup", onPointerUp);
-        container.on("pointerout", () => {
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-        });
+        container.off('pointerupoutside', onPointerUp);
+        container.off('pointerup', onPointerUp);
+        container.off('mouseup', onPointerUp);
+        container.off('touchend', onPointerUp);
+        container.off('touchendoutside', onPointerUp);
+        container.off('mouseupoutside', onPointerUp);
+        updateHitArea(container);
 
         // No global cursor changes here; let Phaser handle per-object cursor
     };
+    container.on('pointerdown', onPointerDown);
+    container.on('touchstart', onPointerDown);
 }
 
 export class ZButton extends ZContainer {
@@ -197,7 +208,6 @@ export class ZButton extends ZContainer {
         }
 
         this.enable();
-        updateHitArea(this);
     }
 
     applyTransform() {
@@ -248,22 +258,18 @@ export class ZButton extends ZContainer {
 
     setCallback(func: () => void) {
         this.callback = func;
-        AttachClickListener(this, () => this.onClicked(), this.longPressCallback);
     }
 
     removeCallback() {
         this.callback = undefined;
-        RemoveClickListener(this);
     }
 
     setLongPressCallback(func: () => void) {
         this.longPressCallback = func;
-        AttachClickListener(this, this.callback ? () => this.onClicked() : undefined, func);
     }
 
     removeLongPressCallback() {
         this.longPressCallback = undefined;
-        AttachClickListener(this, this.callback ? () => this.onClicked() : undefined, undefined);
     }
 
     onClicked() {
@@ -295,8 +301,13 @@ export class ZButton extends ZContainer {
         this.on("pointerover", this.onOver, this);
         this.on("pointerdown", this.onDown, this);
         this.on("pointerup", this.onOut, this);
-
-        AttachClickListener(this, this.callback ? () => this.onClicked() : undefined, this.longPressCallback);
+        AttachClickListener(
+            this,
+            () => this.onClicked(),
+            () => {
+                if (this.longPressCallback) this.longPressCallback();
+            }
+        );
         updateHitArea(this);
     }
 

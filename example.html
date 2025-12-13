@@ -26,8 +26,8 @@
         // Example JSON path (adjust as needed)
         //
 
-        let sceneJsonPath = "./assets/chili/";
-        //let sceneJsonPath = "./assets/button/";
+        //let sceneJsonPath = "./assets/chili/";
+        let sceneJsonPath = "./assets/button/";
 
         // Define a Phaser scene that will use ZScene
         class MyPhaserScene extends Phaser.Scene {
@@ -48,6 +48,9 @@
                         if (btn) {
                             btn.setCallback(() => {
                                 console.log("Button clicked!");
+                            });
+                            btn.setLongPressCallback(() => {
+                                console.log("Button long pressed!");
                             });
                         }
 
