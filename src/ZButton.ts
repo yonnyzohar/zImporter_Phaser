@@ -30,7 +30,7 @@ export function updateHitArea(container: Phaser.GameObjects.Container & { _hitAr
     // Get the container's world transform matrix
     const containerMatrix = container.getWorldTransformMatrix();
     container.iterate((child: any) => {
-        if (!child.visible || !child.getBounds) return;
+        if (!child.getBounds) return;
         const b = child.getBounds(); // world coordinates
         // Transform all four corners to container local space
         const points = [
@@ -136,6 +136,7 @@ export const AttachClickListener = (
     };
     container.on('pointerdown', onPointerDown);
     container.on('touchstart', onPointerDown);
+    updateHitArea(container);
 }
 
 export class ZButton extends ZContainer {
@@ -308,7 +309,7 @@ export class ZButton extends ZContainer {
                 if (this.longPressCallback) this.longPressCallback();
             }
         );
-        updateHitArea(this);
+
     }
 
     disable() {
@@ -351,7 +352,6 @@ export class ZButton extends ZContainer {
                 (this.topLabelContainer2 as any).alpha = 0.5;
             }
         }
-        //updateHitArea(this);
     }
 
     onOut() {
@@ -368,7 +368,6 @@ export class ZButton extends ZContainer {
                 (this.topLabelContainer2 as any).alpha = 1;
             }
         }
-        //updateHitArea(this);
     }
 
     onOver() {
@@ -385,6 +384,5 @@ export class ZButton extends ZContainer {
                 (this.topLabelContainer2 as any).alpha = 1;
             }
         }
-        //updateHitArea(this);
     }
 }

@@ -187,7 +187,6 @@ export class ZScene {
       }
     }
 
-    (window as any).game = this._sceneStage;
     this.resize(window.innerWidth, window.innerHeight);
   }
 
