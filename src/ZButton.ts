@@ -130,7 +130,7 @@ export const AttachClickListener = (
         container.off('touchend', onPointerUp);
         container.off('touchendoutside', onPointerUp);
         container.off('mouseupoutside', onPointerUp);
-        updateHitArea(container);
+        //updateHitArea(container);
 
         // No global cursor changes here; let Phaser handle per-object cursor
     };
@@ -351,7 +351,7 @@ export class ZButton extends ZContainer {
                 (this.topLabelContainer2 as any).alpha = 0.5;
             }
         }
-        updateHitArea(this);
+        //updateHitArea(this);
     }
 
     onOut() {
@@ -368,7 +368,7 @@ export class ZButton extends ZContainer {
                 (this.topLabelContainer2 as any).alpha = 1;
             }
         }
-        updateHitArea(this);
+        //updateHitArea(this);
     }
 
     onOver() {
@@ -385,6 +385,6 @@ export class ZButton extends ZContainer {
                 (this.topLabelContainer2 as any).alpha = 1;
             }
         }
-        updateHitArea(this);
+        //updateHitArea(this);
     }
 }
