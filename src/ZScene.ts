@@ -24,7 +24,7 @@ export class ZScene {
   ]);
 
   private assetBasePath: string = "";
-  private _sceneStage!: Phaser.GameObjects.Container;
+  private _sceneStage!: ZContainer;
   private data: SceneData;
   private scene?: Phaser.Textures.Texture;
   private resizeMap: Map<ZContainer | ZNineSlice, boolean> = new Map();
@@ -237,7 +237,7 @@ export class ZScene {
   }
 
   async load(assetBasePath: string, _loadCompleteFnctn: Function) {
-    this._sceneStage = new Phaser.GameObjects.Container(this.phaserScene); // Will be added to scene later
+    this._sceneStage = new ZContainer(this.phaserScene); // Will be added to scene later
     this.assetBasePath = assetBasePath;
     const placementsUrl = assetBasePath + "placements.json?rnd=" + Math.random();
     try {

@@ -13,6 +13,64 @@ export const RemoveClickListener = (container: Phaser.GameObjects.Container): vo
     container.off && container.off("pointerover");
 };
 
+
+// Update the hit area of a button container to match its visible graphics, ignoring origin/pivot
+export function updateHitArea(container: Phaser.GameObjects.Container & { _hitAreaGraphics?: Phaser.GameObjects.Graphics }) {
+    // Remove old hit area graphics if present
+    if (container._hitAreaGraphics) {
+        container.remove(container._hitAreaGraphics, true);
+        container._hitAreaGraphics.destroy();
+        container._hitAreaGraphics = undefined;
+    }
+    if (!container.scene || !container.scene.add) return;
+
+    // Compute local bounds of all children, taking into account scale, pivot, and origin
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    // Get the container's world transform matrix
+    const containerMatrix = container.getWorldTransformMatrix();
+    container.iterate((child: any) => {
+        if (!child.visible || !child.getBounds) return;
+        const b = child.getBounds(); // world coordinates
+        // Transform all four corners to container local space
+        const points = [
+            { x: b.x, y: b.y },
+            { x: b.x + b.width, y: b.y },
+            { x: b.x, y: b.y + b.height },
+            { x: b.x + b.width, y: b.y + b.height }
+        ];
+        points.forEach(pt => {
+            const local = containerMatrix.applyInverse(pt.x, pt.y);
+            minX = Math.min(minX, local.x);
+            minY = Math.min(minY, local.y);
+            maxX = Math.max(maxX, local.x);
+            maxY = Math.max(maxY, local.y);
+        });
+    });
+    if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+        // fallback: default to 0,0,1,1
+        minX = 0; minY = 0; maxX = 1; maxY = 1;
+    }
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    // Create a new invisible graphics object at (minX, minY) in local space
+    const g = container.scene.add.graphics();
+    g.fillStyle(0xffffff, 0.1); // visible for debug, set to 0.001 for production
+    g.fillRect(minX, minY, width, height);
+    g.setName("_hitAreaGraphics");
+    g.setInteractive(new Phaser.Geom.Rectangle(minX, minY, width, height), Phaser.Geom.Rectangle.Contains);
+    g.input!.cursor = 'pointer'; // Set the cursor style
+    // Forward pointer events to this button
+    g.on("pointerdown", (e: any) => container.emit("pointerdown", e));
+    g.on("pointerup", (e: any) => container.emit("pointerup", e));
+    g.on("pointerover", (e: any) => container.emit("pointerover", e));
+    g.on("pointerout", (e: any) => container.emit("pointerout", e));
+    // Add to container at the bottom
+    container.add(g);
+    container._hitAreaGraphics = g;
+}
+
+
 // Attach click and long-press listeners, with drag threshold
 export const AttachClickListener = (
     container: Phaser.GameObjects.Container,
@@ -20,16 +78,8 @@ export const AttachClickListener = (
     longPressCallback?: () => void
 ): void => {
     // Calculate bounds based on children and set the hit area
-    const bounds = container.getBounds();
-    container.setInteractive(
-        new Phaser.Geom.Rectangle(
-            bounds.x - container.x,
-            bounds.y - container.y,
-            bounds.width,
-            bounds.height
-        ),
-        Phaser.Geom.Rectangle.Contains
-    );
+    // Calculate bounds relative to (0,0) to ignore origin/pivot
+    updateHitArea(container);
 
     let longPressTimer: any = null;
     const LONG_PRESS_DURATION = 500;
@@ -65,25 +115,20 @@ export const AttachClickListener = (
         if (!longPressFired && !isDrag) {
             pressCallback && pressCallback();
         }
+
+        container.on("pointerdown", onPointerDown);
+        container.on("pointerup", onPointerUp);
+        container.on("pointerout", () => {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        });
+
+        // No global cursor changes here; let Phaser handle per-object cursor
     };
-
-    container.on("pointerdown", onPointerDown);
-    container.on("pointerup", onPointerUp);
-    container.on("pointerout", () => {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-    });
-
-    // Change cursor to pointer on hover
-    container.on("pointerover", () => {
-        container.scene.input.setDefaultCursor && container.scene.input.setDefaultCursor("pointer");
-    });
-    container.on("pointerout", () => {
-        container.scene.input.setDefaultCursor && container.scene.input.setDefaultCursor("default");
-    });
-};
+}
 
 export class ZButton extends ZContainer {
+    _hitAreaGraphics?: Phaser.GameObjects.Graphics;
     topLabelContainer2?: ZContainer;
     topLabelContainer?: ZContainer;
 
@@ -114,18 +159,6 @@ export class ZButton extends ZContainer {
 
     init(_labelStr: string = "") {
         super.init?.();
-
-        // Enable input
-        const bounds = this.getBounds();
-        this.setInteractive(
-            new Phaser.Geom.Rectangle(
-                bounds.x - this.x,
-                bounds.y - this.y,
-                bounds.width,
-                bounds.height
-            ),
-            Phaser.Geom.Rectangle.Contains
-        );
 
         if (this.overState) {
             this.overLabelContainer = this.overState.getByName?.("labelContainer") as ZContainer;
@@ -164,7 +197,9 @@ export class ZButton extends ZContainer {
         }
 
         this.enable();
+        updateHitArea(this);
     }
+
 
     setLabel(name: string): void {
         if (this.labelState === "single" && this.topLabelContainer) {
@@ -232,12 +267,9 @@ export class ZButton extends ZContainer {
 
     enable() {
         this.removeAllListeners && this.removeAllListeners();
-        this.enablePointerInteraction && this.enablePointerInteraction(true);
+        // Do NOT call enablePointerInteraction here; only the white graphics will be interactive
 
-        // Set cursor to pointer
-        if (this.scene && this.scene.input && this.scene.input.setDefaultCursor) {
-            this.scene.input.setDefaultCursor("pointer");
-        }
+        // No global cursor change here; let Phaser handle per-object cursor
 
         this.hideAllStates();
         if (this.upState) {
@@ -260,14 +292,13 @@ export class ZButton extends ZContainer {
         this.on("pointerup", this.onOut, this);
 
         AttachClickListener(this, this.callback ? () => this.onClicked() : undefined, this.longPressCallback);
+        updateHitArea(this);
     }
 
     disable() {
         this.removeAllListeners && this.removeAllListeners();
         this.disableInteractive && this.disableInteractive();
-        if (this.scene && this.scene.input && this.scene.input.setDefaultCursor) {
-            this.scene.input.setDefaultCursor("default");
-        }
+        // No global cursor change here; let Phaser handle per-object cursor
         this.hideAllStates();
         if (this.disabledState) {
             this.disabledState.setVisible(true);
@@ -304,6 +335,7 @@ export class ZButton extends ZContainer {
                 (this.topLabelContainer2 as any).alpha = 0.5;
             }
         }
+        updateHitArea(this);
     }
 
     onOut() {
@@ -320,6 +352,7 @@ export class ZButton extends ZContainer {
                 (this.topLabelContainer2 as any).alpha = 1;
             }
         }
+        updateHitArea(this);
     }
 
     onOver() {
@@ -336,5 +369,6 @@ export class ZButton extends ZContainer {
                 (this.topLabelContainer2 as any).alpha = 1;
             }
         }
+        updateHitArea(this);
     }
 }

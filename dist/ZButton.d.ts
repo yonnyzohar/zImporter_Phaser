@@ -1,7 +1,11 @@
 import { ZContainer } from "./ZContainer";
 export declare const RemoveClickListener: (container: Phaser.GameObjects.Container) => void;
+export declare function updateHitArea(container: Phaser.GameObjects.Container & {
+    _hitAreaGraphics?: Phaser.GameObjects.Graphics;
+}): void;
 export declare const AttachClickListener: (container: Phaser.GameObjects.Container, pressCallback?: () => void, longPressCallback?: () => void) => void;
 export declare class ZButton extends ZContainer {
+    _hitAreaGraphics?: Phaser.GameObjects.Graphics;
     topLabelContainer2?: ZContainer;
     topLabelContainer?: ZContainer;
     overState?: ZContainer;

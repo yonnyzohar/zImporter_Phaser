@@ -26,8 +26,8 @@
         // Example JSON path (adjust as needed)
         //
 
-        let sceneJsonPath = "./assets/chili/";
-        //let sceneJsonPath = "./assets/complexButton/";
+        //let sceneJsonPath = "./assets/chili/";
+        let sceneJsonPath = "./assets/button/";
 
         // Define a Phaser scene that will use ZScene
         class MyPhaserScene extends Phaser.Scene {
@@ -41,6 +41,16 @@
                 this.zScene.load(sceneJsonPath, () => {
                     // After loading, add objects to this Phaser scene
                     this.zScene.loadStage(this);
+
+                    let stage = this.zScene.sceneStage;
+                    if (stage) {
+                        let btn = stage.get("exampleSimpleBTN");
+                        btn.setCallback(() => {
+                            console.log("Button clicked!");
+                        });
+
+
+                    }
                 });
             }
         }
