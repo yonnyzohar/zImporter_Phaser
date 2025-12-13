@@ -101,6 +101,8 @@ export interface SpriteData extends BaseAssetData {
     filePath: string;
     x: number;
     y: number;
+    pivotX?: number;
+    pivotY?: number;
 }
 export interface NineSliceData extends SpriteData {
     top: number;
@@ -118,6 +120,12 @@ export interface TextInputData extends BaseAssetData {
     text: string;
     props: TextInputObj;
 }
+export type FillType = "solid" | "gradient";
+export declare class BitmapTextGradientData {
+    colors: Array<number>;
+    percentages: Array<number>;
+    fillGradientType: string;
+}
 export interface TextData extends BaseAssetData {
     x: number;
     y: number;
@@ -126,10 +134,12 @@ export interface TextData extends BaseAssetData {
     height: number;
     alpha: number;
     size: number | string;
-    color: any;
+    color?: any;
     align: string;
+    lineJoin?: string;
     text: string;
     fontName: string | string[];
+    lineHeight?: number;
     z: number;
     stroke?: string | number;
     strokeThickness?: number;
@@ -141,7 +151,17 @@ export interface TextData extends BaseAssetData {
     padding?: number | number[];
     textAnchorX: number;
     textAnchorY: number;
+    pivotX?: number;
+    pivotY?: number;
     fontWeight: string;
+    uniqueFontName?: string;
+    fillType?: FillType;
+    dropShadow?: boolean;
+    dropShadowAngle?: number;
+    dropShadowBlur?: number;
+    dropShadowColor?: string | number;
+    dropShadowDistance?: number;
+    gradientData?: BitmapTextGradientData;
 }
 export interface TemplateData {
     type: string;
@@ -172,5 +192,6 @@ export interface SceneData {
     stage: TemplateData | undefined;
     templates: Record<string, TemplateData>;
     fonts: string[];
+    atlas?: boolean;
 }
 //# sourceMappingURL=SceneData.d.ts.map

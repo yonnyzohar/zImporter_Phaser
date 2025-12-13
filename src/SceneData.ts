@@ -119,6 +119,8 @@ export interface SpriteData extends BaseAssetData {
   filePath: string;
   x: number;
   y: number;
+  pivotX?: number;
+  pivotY?: number;
 }
 
 export interface NineSliceData extends SpriteData {
@@ -140,6 +142,16 @@ export interface TextInputData extends BaseAssetData {
   props: TextInputObj;
 }
 
+
+// Gradient and fill types for bitmap text
+export type FillType = "solid" | "gradient";
+
+export class BitmapTextGradientData {
+  public colors: Array<number> = [];
+  public percentages: Array<number> = [];
+  public fillGradientType: string = "vertical"; // Phaser does not have PIXI.TEXT_GRADIENT, so use string
+}
+
 export interface TextData extends BaseAssetData {
   x: number;
   y: number;
@@ -148,10 +160,12 @@ export interface TextData extends BaseAssetData {
   height: number;
   alpha: number;
   size: number | string;
-  color: any;
+  color?: any;
   align: string;
+  lineJoin?: string;
   text: string;
   fontName: string | string[];
+  lineHeight?: number;
   z: number;
   stroke?: string | number;
   strokeThickness?: number;
@@ -163,7 +177,17 @@ export interface TextData extends BaseAssetData {
   padding?: number | number[];
   textAnchorX: number;
   textAnchorY: number;
+  pivotX?: number;
+  pivotY?: number;
   fontWeight: string;
+  uniqueFontName?: string;
+  fillType?: FillType;
+  dropShadow?: boolean;
+  dropShadowAngle?: number;
+  dropShadowBlur?: number;
+  dropShadowColor?: string | number;
+  dropShadowDistance?: number;
+  gradientData?: BitmapTextGradientData;
 }
 
 
@@ -198,4 +222,5 @@ export interface SceneData {
   stage: TemplateData | undefined;
   templates: Record<string, TemplateData>;
   fonts: string[];
+  atlas?: boolean;
 }

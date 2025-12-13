@@ -238,6 +238,38 @@ export class ZContainer extends Phaser.GameObjects.Container {
         return !!this.currentTransform?.isAnchored;
     }
 
+    public getAllOfType(type: string): ZContainer[] {
+        // Ensure `getType` is defined for ZContainer instances
+        (this as any).getType = (this as any).getType || (() => "default");
+        const queue: ZContainer[] = [];
+        const result: ZContainer[] = [];
+        if (this.list && this.list.length > 0) {
+            for (let child of this.list) {
+                if ((child as any).getType) {
+                    queue.push(child as ZContainer);
+                }
+            }
+        }
+
+        while (queue.length > 0) {
+            const current = queue.shift()!;
+            let _t = (current as any).getType?.();
+            if (_t === type) {
+                result.push(current);
+            }
+
+            if (current.list && current.list.length > 0) {
+                for (let child of current.list) {
+                    if ((child as any).getType) {
+                        queue.push(child as ZContainer);
+                    }
+                }
+            }
+        }
+
+        return result as ZContainer[];
+    }
+
     public loadParticle(emitterConfig: any, textureKey: string): void {
         /*
         try {

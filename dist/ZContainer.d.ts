@@ -36,6 +36,7 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     executeFitToScreen(): void;
     applyAnchor(): void;
     isAnchored(): boolean;
+    getAllOfType(type: string): ZContainer[];
     loadParticle(emitterConfig: any, textureKey: string): void;
     playParticleAnim(): void;
     stopParticleAnim(): void;
