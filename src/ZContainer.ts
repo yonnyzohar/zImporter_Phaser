@@ -212,10 +212,117 @@ export class ZContainer extends Phaser.GameObjects.Container {
     }
 
     executeFitToScreen() {
-        this.setPosition(this.scene.scale.width / 2, this.scene.scale.height / 2);
-        this.setSize(this.scene.scale.width, this.scene.scale.height);
-        this.setScale(1);
+        if (this.list.length === 0) return; // No children to fit
+
+        // Set the origin of the container to (0, 0)
+        //this.setOrigin(0, 0);
+        // Get the screen dimensions
+        const screenWidth = this.scene.scale.width;
+        const screenHeight = this.scene.scale.height;
+        // Find the top-left corner of the screen in local space
+        const topLeft = this.parentContainer
+            ? this.parentContainer.getWorldTransformMatrix().applyInverse(0, 0)
+            : { x: 0, y: 0 };
+        const globalRightOrBottom = this.parentContainer
+            ? this.parentContainer.getWorldTransformMatrix().applyInverse(
+                screenWidth,
+                screenHeight
+            )
+            : { x: screenWidth, y: screenHeight };
+        this.setX(topLeft.x);
+        this.setY(topLeft.y);
+        const newWidth = globalRightOrBottom.x - topLeft.x;
+        const newHeight = globalRightOrBottom.y - topLeft.y;
+        const globalMid = this.parentContainer
+            ? this.parentContainer.getWorldTransformMatrix().applyInverse(
+                screenWidth / 2,
+                screenHeight / 2
+            )
+            : { x: screenWidth / 2, y: screenHeight / 2 };
+
+        if (screenWidth > screenHeight) {
+            this.list.forEach(child => {
+                (child as any).displayWidth = newWidth;
+                (child as any).scaleY = (child as any).scaleX;
+            });
+            this.setX(globalMid.x - newWidth / 2);
+            this.setY(globalMid.y - (this.list[0] as any).displayHeight / 2);
+        }
+        else {
+            this.list.forEach(child => {
+                (child as any).displayHeight = newHeight;
+                (child as any).scaleX = (child as any).scaleY;
+            });
+            this.setX(globalMid.x - (this.list[0] as any).displayWidth / 2);
+            this.setY(globalMid.y - newHeight / 2);
+        }
+
+
+
+
+
+
+
+
+
+        console.log("Fitting to screen:", screenWidth, newWidth, screenHeight, newHeight);
+        return;
+
+
     }
+
+    public setX(value?: number | undefined): this {
+
+        super.setX(value);
+        if (this.currentTransform) {
+            this.currentTransform.x = value!;
+        }
+        return this;
+    }
+
+    public setY(value?: number | undefined): this {
+
+        super.setY(value);
+        if (this.currentTransform) {
+            this.currentTransform.y = value!;
+        }
+        return this;
+    }
+
+    public setWidth(value: number): this {
+        super.setSize(value, this.height);
+        if (this.currentTransform) {
+            this.currentTransform.width = value;
+        }
+        return this;
+    }
+
+    public setHeight(value: number): this {
+        super.setSize(this.width, value);
+        if (this.currentTransform) {
+            this.currentTransform.height = value;
+        }
+        return this;
+    }
+
+    public setScaleX(x?: number): this {
+        super.setScale(x, this.scaleY);
+        if (this.currentTransform) {
+            this.currentTransform.scaleX = x!;
+        }
+        return this;
+
+    }
+
+    public setScaleY(y?: number): this {
+        super.setScale(this.scaleX, y);
+        if (this.currentTransform) {
+            this.currentTransform.scaleY = y!;
+        }
+        return this;
+    }
+
+
 
     public applyAnchor() {
         if (this.currentTransform && this.currentTransform.isAnchored && this.parentContainer) {

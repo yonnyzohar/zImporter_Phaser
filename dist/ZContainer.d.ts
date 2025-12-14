@@ -34,6 +34,12 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     setOrigin(): void;
     resize(width: number, height: number, orientation: "portrait" | "landscape"): void;
     executeFitToScreen(): void;
+    setX(value?: number | undefined): this;
+    setY(value?: number | undefined): this;
+    setWidth(value: number): this;
+    setHeight(value: number): this;
+    setScaleX(x?: number): this;
+    setScaleY(y?: number): this;
     applyAnchor(): void;
     isAnchored(): boolean;
     getAllOfType(type: string): ZContainer[];
