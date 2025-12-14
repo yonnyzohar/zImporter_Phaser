@@ -1,4 +1,4 @@
-import { AttachClickListener } from "./ZButton";
+import { AttachClickListener, updateHitArea } from "./ZButton";
 import { ZContainer } from "./ZContainer";
 import { ZState } from "./ZState";
 
@@ -21,6 +21,11 @@ export class ZToggle extends ZState {
             }
         });
         this.setViewState("offState");
+    }
+
+    applyTransform() {
+        super.applyTransform();
+        updateHitArea(this);
     }
 
     setCallback(func: (t: boolean) => void) {

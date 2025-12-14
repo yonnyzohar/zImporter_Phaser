@@ -135,7 +135,7 @@ export class ZScene {
     if (obj.filters) {
       // Example: log filters for debugging
       for (const filter of obj.filters) {
-        console.log('Filter requested:', filter.type, filter);
+        //console.log('Filter requested:', filter.type, filter);
       }
     }
   }
@@ -170,7 +170,7 @@ export class ZScene {
           this._sceneStage.add(mc);
           (this._sceneStage as any)[mc.name] = mc;
           const bounds = mc.getBounds();
-          console.log('Added to stage:', mc.name, 'visible:', mc.visible, 'alpha:', mc.alpha, 'bounds:', bounds.width, 'x', bounds.height, 'at', mc.x, mc.y);
+          //console.log('Added to stage:', mc.name, 'visible:', mc.visible, 'alpha:', mc.alpha, 'bounds:', bounds.width, 'x', bounds.height, 'at', mc.x, mc.y);
         } else {
           console.warn('Failed to spawn template:', tempName);
         }
@@ -178,15 +178,8 @@ export class ZScene {
     }
 
     this.phaserScene.add.existing(this._sceneStage);
-
-    // Log first child details for debugging
-    if (this._sceneStage.list.length > 0) {
-      const firstChild = this._sceneStage.list[0] as any;
-      if (firstChild.list && firstChild.list.length > 0) {
-        const firstGrandchild = firstChild.list[0];
-      }
-    }
-
+    //this needs to happen twice...
+    this.resize(window.innerWidth, window.innerHeight);
     this.resize(window.innerWidth, window.innerHeight);
   }
 
@@ -270,15 +263,15 @@ export class ZScene {
 
       // Add error handling for failed loads
       this.phaserScene.load.once('filecomplete-image-' + atlasKey, () => {
-        console.log('Atlas image loaded:', atlasKey);
+        //console.log('Atlas image loaded:', atlasKey);
       });
 
       this.phaserScene.load.once('filecomplete-json-' + atlasKey, () => {
-        console.log('Atlas JSON loaded:', atlasKey);
+        //console.log('Atlas JSON loaded:', atlasKey);
       });
 
       this.phaserScene.load.once('loaderror', (file: any) => {
-        console.error('Load error:', file.key, file.url, file.error);
+        //console.error('Load error:', file.key, file.url, file.error);
       });
 
       this.phaserScene.load.atlas(atlasKey, atlasImageUrl, atlasJsonUrl);
@@ -292,7 +285,6 @@ export class ZScene {
 
         // Verify texture has frames
         const frameCount = Object.keys(texture.frames).length;
-        console.log('Atlas loaded:', atlasKey, 'frames:', frameCount);
 
         if (frameCount === 0) {
           console.warn('Atlas has no frames! Check JSON format.');
@@ -343,11 +335,6 @@ export class ZScene {
     });
     this.phaserScene.load.start();
   }
-
-
-
-
-
 
   initScene(_placementsObj: SceneData) {
     this.data = _placementsObj;
@@ -513,7 +500,7 @@ export class ZScene {
           if (!hasFrame) {
             console.warn('Frame not found in atlas:', frameKey, 'Available frames:', Object.keys(texture.frames).slice(0, 10).join(', '));
           } else {
-            console.log('Creating sprite:', frameKey, 'at', spriteNode.x, spriteNode.y, 'size:', spriteNode.width, spriteNode.height);
+            //console.log('Creating sprite:', frameKey, 'at', spriteNode.x, spriteNode.y, 'size:', spriteNode.width, spriteNode.height);
           }
           asset = this.phaserScene.add.sprite(spriteNode.x, spriteNode.y, this.sceneName as string, frameKey);
           if (!asset) {

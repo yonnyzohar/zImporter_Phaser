@@ -30,7 +30,7 @@ export function updateHitArea(container: Phaser.GameObjects.Container & { _hitAr
     // Get the container's world transform matrix
     const containerMatrix = container.getWorldTransformMatrix();
     container.iterate((child: any) => {
-        if (!child.getBounds) return;
+        if (!child.visible || !child.getBounds) return;
         const b = child.getBounds(); // world coordinates
         // Transform all four corners to container local space
         const points = [
@@ -56,7 +56,7 @@ export function updateHitArea(container: Phaser.GameObjects.Container & { _hitAr
 
     // Create a new invisible graphics object at (minX, minY) in local space
     const g = container.scene.add.graphics();
-    g.fillStyle(0xffffff, 0.1); // visible for debug, set to 0.001 for production
+    g.fillStyle(0xffffff, 0.001); // visible for debug, set to 0.001 for production
     g.fillRect(minX, minY, width, height);
     g.setName("_hitAreaGraphics");
     g.setInteractive(new Phaser.Geom.Rectangle(minX, minY, width, height), Phaser.Geom.Rectangle.Contains);
@@ -99,6 +99,7 @@ export const AttachClickListener = (
         longPressTimer = setTimeout(() => {
             longPressFired = true;
             longPressCallback && longPressCallback();
+            updateHitArea(container);
         }, LONG_PRESS_DURATION);
         container.on('pointerupoutside', onPointerUp);
         container.on('pointerup', onPointerUp);
@@ -130,7 +131,7 @@ export const AttachClickListener = (
         container.off('touchend', onPointerUp);
         container.off('touchendoutside', onPointerUp);
         container.off('mouseupoutside', onPointerUp);
-        //updateHitArea(container);
+        updateHitArea(container);
 
         // No global cursor changes here; let Phaser handle per-object cursor
     };

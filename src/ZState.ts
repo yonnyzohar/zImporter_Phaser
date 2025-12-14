@@ -25,9 +25,9 @@ export class ZState extends ZContainer {
     }
 
     public setViewState(str: string): ZContainer | null {
-        let chosenChild = this.getChildByName(str) as ZContainer;
+        let chosenChild = this.get(str) as ZContainer;
         if (!chosenChild) {
-            chosenChild = this.getChildByName("idle") as ZContainer;
+            chosenChild = this.get("idle") as ZContainer;
             if (!chosenChild && this.list.length > 0) {
                 chosenChild = this.list[0] as ZContainer;
             }

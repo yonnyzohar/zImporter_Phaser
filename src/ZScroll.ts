@@ -87,6 +87,7 @@ export class ZScroll extends ZContainer {
         this.enableChildPassThrough();
     }
 
+
     private enableChildPassThrough(): void {
         // Allow buttons/toggles inside scrollContent to propagate events to scrollArea
         let scrollContent = this.scrollContent;
@@ -200,5 +201,8 @@ export class ZScroll extends ZContainer {
     override applyTransform() {
         super.applyTransform();
         this.calculateScrollBar();
+
     }
+
+
 }

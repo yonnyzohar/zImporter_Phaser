@@ -3,6 +3,7 @@ export declare class ZToggle extends ZState {
     private callback?;
     toggleCallback?: (state: boolean) => void;
     init(): void;
+    applyTransform(): void;
     setCallback(func: (t: boolean) => void): void;
     removeCallback(): void;
     setIsClickable(val: boolean): void;

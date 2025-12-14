@@ -3,6 +3,7 @@ import { InstanceData } from "./SceneData";
 import { OrientationData } from "./SceneData";
 import { ZScene } from "./ZScene";
 import { ZTimeline } from "./ZTimeline";
+import { updateHitArea } from "./ZButton";
 
 export interface AnchorData {
     anchorType: string;
@@ -184,6 +185,7 @@ export class ZContainer extends Phaser.GameObjects.Container {
         this.graphics.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
         this.graphics.strokeCircle(this.x, this.y, 5);
         */
+
     }
 
     setOrigin() {
