@@ -54,7 +54,7 @@ export class ZScroll extends ZContainer {
         // the LOCAL-space equivalent, which is consistent with beed.y (local).
         const worldScaleY = this.getWorldScaleY();
         this.scrollBarHeight = this.scrollBar.getBounds().height / worldScaleY;
-        this.contentHeight   = this.scrollContent.getBounds().height / worldScaleY;
+        this.contentHeight = this.scrollContent.getBounds().height / worldScaleY;
 
         console.log(`[ZScroll] "${this.name}" scrollBarH=${this.scrollBarHeight.toFixed(1)}, contentH=${this.contentHeight.toFixed(1)}`);
 
@@ -69,7 +69,7 @@ export class ZScroll extends ZContainer {
         this.beed.setVisible(true);
         this.scrollBar.setVisible(true);
 
-        const w   = this.scrollBar.x - this.scrollContent.x;
+        const w = this.scrollBar.x - this.scrollContent.x;
         const scx = this.scrollContent.x;
         // Use the data y so resets are idempotent across multiple resizes
         const scy = this.scrollContent.currentTransform?.y ?? this.scrollContent.y;
@@ -84,12 +84,12 @@ export class ZScroll extends ZContainer {
         // We convert the local clip rect through ZScroll's world transform matrix.
         this.msk = new Phaser.GameObjects.Graphics(this.scene);
 
-        const mat     = new Phaser.GameObjects.Components.TransformMatrix();
+        const mat = new Phaser.GameObjects.Components.TransformMatrix();
         const tempMat = new Phaser.GameObjects.Components.TransformMatrix();
         this.getWorldTransformMatrix(mat, tempMat);
 
-        const tl = mat.transformPoint(scx,     scy)                        as Phaser.Types.Math.Vector2Like;
-        const br = mat.transformPoint(scx + w, scy + this.scrollBarHeight)  as Phaser.Types.Math.Vector2Like;
+        const tl = mat.transformPoint(scx, scy) as Phaser.Types.Math.Vector2Like;
+        const br = mat.transformPoint(scx + w, scy + this.scrollBarHeight) as Phaser.Types.Math.Vector2Like;
 
         this.msk.fillStyle(0xffffff, 1);
         this.msk.fillRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
@@ -128,7 +128,7 @@ export class ZScroll extends ZContainer {
         // Scroll area spans scrollContent.x → scrollBar.x, height = scrollBarHeight
         const scx = this.scrollContent.x;
         const scy = this.scrollContent.currentTransform?.y ?? this.scrollContent.y;
-        const w   = this.scrollBar.x - scx;
+        const w = this.scrollBar.x - scx;
 
         if (local.x < scx || local.x > scx + w || local.y < scy || local.y > scy + this.scrollBarHeight) return;
 
@@ -136,7 +136,7 @@ export class ZScroll extends ZContainer {
         this.scrollBarHeight = this.scrollBar.getBounds().height / worldScaleY;
 
         const beedTop = this.beed.y;
-        const beedH   = this.beed.getBounds().height / worldScaleY;
+        const beedH = this.beed.getBounds().height / worldScaleY;
         if (local.y >= beedTop && local.y <= beedTop + beedH) {
             this.isBeedDragging = true;
         } else {
@@ -173,13 +173,13 @@ export class ZScroll extends ZContainer {
 
     /** Clamp beed to [0, scrollBarHeight - beedH] and sync scrollContent. All local space. */
     private clampAndSync() {
-        const worldScaleY  = this.getWorldScaleY();
-        const beedH        = Math.max(1, this.beed.getBounds().height / worldScaleY);
-        const maxBeedY     = Math.max(0, this.scrollBarHeight - beedH);
-        this.beed.y        = Phaser.Math.Clamp(this.beed.y, 0, maxBeedY);
-        const per          = maxBeedY > 0 ? this.beed.y / maxBeedY : 0;
-        const totalH       = this.scrollContent.getBounds().height / worldScaleY;
-        const scy0         = this.scrollContent.currentTransform?.y ?? 0;
+        const worldScaleY = this.getWorldScaleY();
+        const beedH = Math.max(1, this.beed.getBounds().height / worldScaleY);
+        const maxBeedY = Math.max(0, this.scrollBarHeight - beedH);
+        this.beed.y = Phaser.Math.Clamp(this.beed.y, 0, maxBeedY);
+        const per = maxBeedY > 0 ? this.beed.y / maxBeedY : 0;
+        const totalH = this.scrollContent.getBounds().height / worldScaleY;
+        const scy0 = this.scrollContent.currentTransform?.y ?? 0;
         this.scrollContent.y = scy0 - per * (totalH - this.scrollBarHeight);
     }
 
