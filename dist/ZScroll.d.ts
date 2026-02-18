@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { ZContainer } from "./ZContainer";
 export declare class ZScroll extends ZContainer {
+    /** Height of the scroll track — ZScroll LOCAL space (not world space) */
     scrollBarHeight: number;
     contentHeight: number;
     dragStartY: number;
@@ -12,20 +13,22 @@ export declare class ZScroll extends ZContainer {
     scrollBar: ZContainer;
     scrollContent: ZContainer;
     msk: Phaser.GameObjects.Graphics | null;
-    scrollArea: Phaser.GameObjects.Graphics | null;
     init(): void;
     getType(): string;
     private calculateScrollBar;
-    private enableChildPassThrough;
     addEventListeners(): void;
     removeEventListeners(): void;
     removeListeners(): void;
-    private onPointerDown;
-    private onBeedDown;
+    private onScenePointerDown;
     private onPointerMove;
     private onPointerUp;
-    private onBeedUp;
     private onWheel;
+    /** Clamp beed to [0, scrollBarHeight - beedH] and sync scrollContent. All local space. */
+    private clampAndSync;
+    /** Convert world-space coords to ZScroll's local coordinate space. */
+    private worldToLocal;
+    /** Accumulated world Y-scale of this container (includes all parent scales). */
+    private getWorldScaleY;
     applyTransform(): void;
 }
 //# sourceMappingURL=ZScroll.d.ts.map

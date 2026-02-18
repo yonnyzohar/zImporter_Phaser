@@ -3,6 +3,7 @@ import { ZContainer } from "./ZContainer";
 
 
 export class ZScroll extends ZContainer {
+    /** Height of the scroll track — ZScroll LOCAL space (not world space) */
     scrollBarHeight: number = 0;
     contentHeight: number = 0;
     dragStartY = 0;
@@ -16,21 +17,22 @@ export class ZScroll extends ZContainer {
     scrollContent!: ZContainer;
 
     msk: Phaser.GameObjects.Graphics | null = null;
-    scrollArea: Phaser.GameObjects.Graphics | null = null;
 
     init() {
         super.init();
 
-        this.beed = this.getByName("beed") as ZContainer;
-        this.scrollBar = this.getByName("scrollBar") as ZContainer;
-        this.scrollContent = this.getByName("scrollContent") as ZContainer;
+        // Use ZContainer's recursive BFS get() — Phaser's getByName only searches direct children
+        this.beed = this.get("beed") as ZContainer;
+        this.scrollBar = this.get("scrollBar") as ZContainer;
+        this.scrollContent = this.get("scrollContent") as ZContainer;
 
         if (!this.beed || !this.scrollBar || !this.scrollContent) {
-            console.warn("ZScroll requires 'beed', 'scrollBar', and 'scrollContent' children.");
+            console.warn("ZScroll requires 'beed', 'scrollBar', and 'scrollContent' children.", this.name);
             return;
         }
 
-        this.calculateScrollBar();
+        // Defer one tick — children need their applyTransform called before we measure them
+        this.scene.time.delayedCall(0, () => this.calculateScrollBar());
     }
 
     getType(): string {
@@ -38,106 +40,81 @@ export class ZScroll extends ZContainer {
     }
 
     private calculateScrollBar(): void {
-        // Clean up old mask & scroll area before rebuilding
         if (this.msk) {
+            this.scrollContent?.clearMask(true);
             this.msk.destroy();
             this.msk = null;
         }
-        if (this.scrollArea) {
-            this.scrollArea.destroy();
-            this.scrollArea = null;
-        }
+        this.removeEventListeners();
 
-        if (!this.scrollBar || !this.scrollContent) {
-            return;
-        }
+        if (!this.scrollBar || !this.scrollContent || !this.beed) return;
 
-        this.scrollBarHeight = this.scrollBar.height;
-        this.contentHeight = this.scrollContent.height;
+        // ── CRITICAL: Phaser Container.height = 0 (unlike PIXI). ────────────
+        // getBounds() returns WORLD-space bounds. Divide by world scale to get
+        // the LOCAL-space equivalent, which is consistent with beed.y (local).
+        const worldScaleY = this.getWorldScaleY();
+        this.scrollBarHeight = this.scrollBar.getBounds().height / worldScaleY;
+        this.contentHeight   = this.scrollContent.getBounds().height / worldScaleY;
+
+        console.log(`[ZScroll] "${this.name}" scrollBarH=${this.scrollBarHeight.toFixed(1)}, contentH=${this.contentHeight.toFixed(1)}`);
 
         if (this.contentHeight <= this.scrollBarHeight) {
+            console.log(`[ZScroll] "${this.name}" content fits — no scroll needed`);
+            this.beed.setVisible(false);
             this.scrollBar.setVisible(false);
             this.scrollContent.y = 0;
             return;
         }
 
+        this.beed.setVisible(true);
         this.scrollBar.setVisible(true);
-        const w = this.scrollBar.x - this.scrollContent.x;
 
-        // Mask
-        this.msk = this.scene.add.graphics();
-        this.add(this.msk);
-        this.msk.clear();
+        const w   = this.scrollBar.x - this.scrollContent.x;
+        const scx = this.scrollContent.x;
+        // Use the data y so resets are idempotent across multiple resizes
+        const scy = this.scrollContent.currentTransform?.y ?? this.scrollContent.y;
+
+        // ── Geometry mask in world space ─────────────────────────────────────
+        // Key trick: create the Graphics WITHOUT adding it to any display list
+        // (no this.add / no scene.add.existing). It is never rendered as a visible
+        // rectangle, but Phaser's GeometryMask still calls willRender() → true
+        // (visible=true, alpha=1 by default) and writes the stencil buffer.
+        //
+        // Because the Graphics has no parent, its coords are world space.
+        // We convert the local clip rect through ZScroll's world transform matrix.
+        this.msk = new Phaser.GameObjects.Graphics(this.scene);
+
+        const mat     = new Phaser.GameObjects.Components.TransformMatrix();
+        const tempMat = new Phaser.GameObjects.Components.TransformMatrix();
+        this.getWorldTransformMatrix(mat, tempMat);
+
+        const tl = mat.transformPoint(scx,     scy)                        as Phaser.Types.Math.Vector2Like;
+        const br = mat.transformPoint(scx + w, scy + this.scrollBarHeight)  as Phaser.Types.Math.Vector2Like;
+
         this.msk.fillStyle(0xffffff, 1);
-        this.msk.fillRect(0, 0, w, this.scrollBarHeight);
+        this.msk.fillRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
         this.scrollContent.setMask(this.msk.createGeometryMask());
 
-        // Scroll area
-        this.scrollArea = this.scene.add.graphics();
-        this.addAt(this.scrollArea, 0);
-        this.scrollArea.clear();
-        this.scrollArea.fillStyle(0x000000, 0.001); // invisible hit area
-        this.scrollArea.fillRect(0, 0, w, this.scrollBarHeight);
-        this.scrollArea.setInteractive(new Phaser.Geom.Rectangle(0, 0, w, this.scrollBarHeight), Phaser.Geom.Rectangle.Contains);
-
-        this.scrollContent.y = 0;
-        this.scrollBar.y = 0;
+        this.scrollContent.y = scy;
+        this.beed.y = 0;
 
         this.addEventListeners();
-        this.enableChildPassThrough();
-    }
-
-
-    private enableChildPassThrough(): void {
-        // Allow buttons/toggles inside scrollContent to propagate events to scrollArea
-        let scrollContent = this.scrollContent;
-        let scrollArea = this.scrollArea;
-        let types: string[] = ["ZToggle", "ZButton"];
-        for (let type of types) {
-            let allButtons = scrollContent.getAllOfType ? scrollContent.getAllOfType(type) : [];
-            for (let i = 0; i < allButtons.length; i++) {
-                let child = allButtons[i];
-                child.on && child.on("pointerdown", (event: any) => { scrollArea && scrollArea.emit("pointerdown", event); });
-                child.on && child.on("pointerup", (event: any) => { scrollArea && scrollArea.emit("pointerup", event); });
-                child.on && child.on("pointermove", (event: any) => { scrollArea && scrollArea.emit("pointermove", event); });
-            }
-        }
     }
 
     addEventListeners(): void {
         this.removeEventListeners();
-        if (this.scrollArea) {
-            this.scrollArea.on(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
-            this.scrollArea.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
-            this.scrollArea.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
-            this.scrollArea.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onPointerUp, this);
-        }
-
-        // Enable dragging beed directly
-        if (this.beed) {
-            this.beed.setInteractive();
-            this.beed.on(Phaser.Input.Events.POINTER_DOWN, this.onBeedDown, this);
-            this.beed.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
-            this.beed.on(Phaser.Input.Events.POINTER_UP, this.onBeedUp, this);
-            this.beed.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onBeedUp, this);
-        }
-
+        // All events are scene-level so drags never get stuck when pointer leaves any object
+        this.scene.input.on(Phaser.Input.Events.POINTER_DOWN, this.onScenePointerDown, this);
+        this.scene.input.on(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
+        this.scene.input.on(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
         this.scene.input.on("wheel", this.onWheel, this);
     }
 
     removeEventListeners(): void {
-        if (this.scrollArea) {
-            this.scrollArea.off(Phaser.Input.Events.POINTER_DOWN, this.onPointerDown, this);
-            this.scrollArea.off(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
-            this.scrollArea.off(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
-            this.scrollArea.off(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onPointerUp, this);
-        }
-        if (this.beed) {
-            this.beed.off(Phaser.Input.Events.POINTER_DOWN, this.onBeedDown, this);
-            this.beed.off(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
-            this.beed.off(Phaser.Input.Events.POINTER_UP, this.onBeedUp, this);
-            this.beed.off(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onBeedUp, this);
-        }
+        if (!this.scene?.input) return;
+        this.scene.input.off(Phaser.Input.Events.POINTER_DOWN, this.onScenePointerDown, this);
+        this.scene.input.off(Phaser.Input.Events.POINTER_MOVE, this.onPointerMove, this);
+        this.scene.input.off(Phaser.Input.Events.POINTER_UP, this.onPointerUp, this);
         this.scene.input.off("wheel", this.onWheel, this);
     }
 
@@ -145,64 +122,88 @@ export class ZScroll extends ZContainer {
         this.removeEventListeners();
     }
 
-    private onPointerDown(pointer: Phaser.Input.Pointer) {
-        this.isDragging = true;
-        this.scrollBarHeight = this.scrollBar.height;
-        this.dragStartY = pointer.worldY;
-        this.beedStartY = this.beed.y;
-    }
+    private onScenePointerDown(pointer: Phaser.Input.Pointer) {
+        const local = this.worldToLocal(pointer.worldX, pointer.worldY);
 
-    private onBeedDown(pointer: Phaser.Input.Pointer) {
-        this.isBeedDragging = true;
-        this.scrollBarHeight = this.scrollBar.height;
-        this.dragStartY = pointer.worldY;
+        // Scroll area spans scrollContent.x → scrollBar.x, height = scrollBarHeight
+        const scx = this.scrollContent.x;
+        const scy = this.scrollContent.currentTransform?.y ?? this.scrollContent.y;
+        const w   = this.scrollBar.x - scx;
+
+        if (local.x < scx || local.x > scx + w || local.y < scy || local.y > scy + this.scrollBarHeight) return;
+
+        const worldScaleY = this.getWorldScaleY();
+        this.scrollBarHeight = this.scrollBar.getBounds().height / worldScaleY;
+
+        const beedTop = this.beed.y;
+        const beedH   = this.beed.getBounds().height / worldScaleY;
+        if (local.y >= beedTop && local.y <= beedTop + beedH) {
+            this.isBeedDragging = true;
+        } else {
+            this.isDragging = true;
+        }
+        this.dragStartY = local.y;
         this.beedStartY = this.beed.y;
+        console.log(`[ZScroll] down local=(${local.x.toFixed(1)},${local.y.toFixed(1)}) drag=${this.isDragging} beedDrag=${this.isBeedDragging}`);
     }
 
     private onPointerMove(pointer: Phaser.Input.Pointer) {
-        if (this.isDragging || this.isBeedDragging) {
-            const currentY = pointer.worldY;
-            let deltaY = this.isDragging
-                ? this.dragStartY - currentY // scroll area inverts direction
-                : currentY - this.dragStartY; // beed is direct drag
+        if (!this.isDragging && !this.isBeedDragging) return;
 
-            this.beed.y = this.beedStartY + deltaY;
+        const currentY = this.worldToLocal(pointer.worldX, pointer.worldY).y;
+        const deltaY = this.isDragging
+            ? this.dragStartY - currentY  // invert: drag down → content scrolls up
+            : currentY - this.dragStartY; // beed: direct 1:1
 
-            // Clamp
-            if (this.beed.y < 0) this.beed.y = 0;
-            if (this.beed.y > this.scrollBarHeight - this.beed.height) this.beed.y = this.scrollBarHeight - this.beed.height;
-
-            // Update scrollContent.y
-            const per = this.beed.y / (this.scrollBarHeight - this.beed.height);
-            this.scrollContent.y = -per * (this.scrollContent.height - this.scrollBarHeight);
-        }
+        this.beed.y = this.beedStartY + deltaY;
+        this.clampAndSync();
     }
 
     private onPointerUp() {
         this.isDragging = false;
-    }
-
-    private onBeedUp() {
         this.isBeedDragging = false;
     }
 
-    private onWheel(pointer: Phaser.Input.Pointer, dx: number, dy: number, dz: number, event: WheelEvent) {
+    private onWheel(_pointer: Phaser.Input.Pointer, _over: Phaser.GameObjects.GameObject[], _dx: number, dy: number) {
         if (!this.scrollingEnabled) return;
-        let delta = -dy * 0.5;
-        this.scrollBarHeight = this.scrollBar.height;
-        this.beed.y -= delta;
-        if (this.beed.y < 0) this.beed.y = 0;
-        if (this.beed.y > this.scrollBarHeight - this.beed.height) this.beed.y = this.scrollBarHeight - this.beed.height;
-        const per = this.beed.y / (this.scrollBarHeight - this.beed.height);
-        this.scrollContent.y = -per * (this.scrollContent.height - this.scrollBarHeight);
-        event.stopPropagation();
+        this.scrollBarHeight = this.scrollBar.getBounds().height / this.getWorldScaleY();
+        this.beed.y -= dy * 0.5;   // dy > 0 = scroll down → beed moves down
+        this.clampAndSync();
+    }
+
+    /** Clamp beed to [0, scrollBarHeight - beedH] and sync scrollContent. All local space. */
+    private clampAndSync() {
+        const worldScaleY  = this.getWorldScaleY();
+        const beedH        = Math.max(1, this.beed.getBounds().height / worldScaleY);
+        const maxBeedY     = Math.max(0, this.scrollBarHeight - beedH);
+        this.beed.y        = Phaser.Math.Clamp(this.beed.y, 0, maxBeedY);
+        const per          = maxBeedY > 0 ? this.beed.y / maxBeedY : 0;
+        const totalH       = this.scrollContent.getBounds().height / worldScaleY;
+        const scy0         = this.scrollContent.currentTransform?.y ?? 0;
+        this.scrollContent.y = scy0 - per * (totalH - this.scrollBarHeight);
+    }
+
+    /** Convert world-space coords to ZScroll's local coordinate space. */
+    private worldToLocal(wx: number, wy: number): { x: number; y: number } {
+        const mat = new Phaser.GameObjects.Components.TransformMatrix();
+        this.getWorldTransformMatrix(mat);
+        mat.invert();
+        return mat.transformPoint(wx, wy) as { x: number; y: number };
+    }
+
+    /** Accumulated world Y-scale of this container (includes all parent scales). */
+    private getWorldScaleY(): number {
+        const mat = new Phaser.GameObjects.Components.TransformMatrix();
+        this.getWorldTransformMatrix(mat);
+        // getScaleY() exists at runtime but is absent from Phaser's TS types
+        return ((mat as any).getScaleY?.() ?? Math.sqrt(mat.c * mat.c + mat.d * mat.d)) || 1;
     }
 
     override applyTransform() {
         super.applyTransform();
-        this.calculateScrollBar();
-
+        // Defer so sibling children finish their resize before we measure them
+        if (this.beed && this.scrollBar && this.scrollContent) {
+            this.scene.time.delayedCall(0, () => this.calculateScrollBar());
+        }
     }
-
-
 }
