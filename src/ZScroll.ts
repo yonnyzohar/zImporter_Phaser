@@ -127,7 +127,7 @@ export class ZScroll extends ZContainer {
 
         const scx = this.scrollContent.x;
         const scy = this.scrollContent.currentTransform?.y ?? this.scrollContent.y;
-        const w   = this.scrollBar.x - scx;
+        const w = this.scrollBar.x - scx;
 
         const worldScaleY = this.getWorldScaleY();
         this.scrollBarHeight = this.scrollBar.getBounds().height / worldScaleY;
