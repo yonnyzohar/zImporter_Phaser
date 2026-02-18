@@ -125,26 +125,32 @@ export class ZScroll extends ZContainer {
     private onScenePointerDown(pointer: Phaser.Input.Pointer) {
         const local = this.worldToLocal(pointer.worldX, pointer.worldY);
 
-        // Scroll area spans scrollContent.x → scrollBar.x, height = scrollBarHeight
         const scx = this.scrollContent.x;
         const scy = this.scrollContent.currentTransform?.y ?? this.scrollContent.y;
-        const w = this.scrollBar.x - scx;
-
-        if (local.x < scx || local.x > scx + w || local.y < scy || local.y > scy + this.scrollBarHeight) return;
+        const w   = this.scrollBar.x - scx;
 
         const worldScaleY = this.getWorldScaleY();
         this.scrollBarHeight = this.scrollBar.getBounds().height / worldScaleY;
 
-        const beedTop = this.beed.y;
-        const beedH = this.beed.getBounds().height / worldScaleY;
-        if (local.y >= beedTop && local.y <= beedTop + beedH) {
+        // Check beed first — its column is to the right of the content area (at scrollBar.x)
+        // so we test it separately against world bounds to avoid coordinate-space confusion.
+        const beedBounds = this.beed.getBounds();
+        if (pointer.worldX >= beedBounds.x && pointer.worldX <= beedBounds.right &&
+            pointer.worldY >= beedBounds.y && pointer.worldY <= beedBounds.bottom) {
             this.isBeedDragging = true;
-        } else {
-            this.isDragging = true;
+            this.dragStartY = local.y;
+            this.beedStartY = this.beed.y;
+            console.log(`[ZScroll] beedDrag start beed.y=${this.beed.y.toFixed(1)}`);
+            return;
         }
+
+        // Check content/scrollBar area
+        if (local.x < scx || local.x > scx + w || local.y < scy || local.y > scy + this.scrollBarHeight) return;
+
+        this.isDragging = true;
         this.dragStartY = local.y;
         this.beedStartY = this.beed.y;
-        console.log(`[ZScroll] down local=(${local.x.toFixed(1)},${local.y.toFixed(1)}) drag=${this.isDragging} beedDrag=${this.isBeedDragging}`);
+        console.log(`[ZScroll] contentDrag start local=(${local.x.toFixed(1)},${local.y.toFixed(1)})`);
     }
 
     private onPointerMove(pointer: Phaser.Input.Pointer) {
