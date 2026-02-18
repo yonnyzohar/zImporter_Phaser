@@ -9,6 +9,8 @@ export declare class ZState extends ZContainer {
     init(): void;
     getCurrentState(): ZContainer | null;
     hasState(str: string): boolean;
+    /** Alias for setViewState — matches PIXI ZState API */
+    setState(str: string | number): this;
     setViewState(str: string): ZContainer | null;
     getAllStateNames(): (string | null)[];
     getType(): string;

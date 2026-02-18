@@ -4,6 +4,9 @@ export class ZSlider extends ZContainer {
     dragging = false;
     sliderWidth = 0;
     callback;
+    onDragStartBinded;
+    onDragEndBinded;
+    onDragBinded;
     handle;
     track;
     init() {
@@ -15,17 +18,21 @@ export class ZSlider extends ZContainer {
             return;
         }
         this.sliderWidth = this.track.width;
-        this.handle.setInteractive({ draggable: true, cursor: 'pointer' });
-        this.handle.on(Phaser.Input.Events.DRAG_START, this.onDragStart, this);
-        this.handle.on(Phaser.Input.Events.DRAG, this.onDrag, this);
-        this.handle.on(Phaser.Input.Events.DRAG_END, this.onDragEnd, this);
-        // Make the handle draggable within the track bounds
-        this.scene.input.setDraggable(this.handle);
+        this.onDragStartBinded = this.onDragStart.bind(this);
+        this.onDragEndBinded = this.onDragEnd.bind(this);
+        this.onDragBinded = this.onDrag.bind(this);
+        this.handle.setInteractive({ cursor: 'pointer' });
+        this.handle.on('pointerdown', this.onDragStartBinded);
+        this.handle.on('touchstart', this.onDragStartBinded);
+    }
+    getType() {
+        return "ZSlider";
     }
     setHandlePosition(t) {
         this.handle.x = t * this.sliderWidth;
-        if (this.callback)
+        if (this.callback) {
             this.callback(t);
+        }
     }
     setCallback(callback) {
         this.callback = callback;
@@ -33,19 +40,49 @@ export class ZSlider extends ZContainer {
     removeCallback() {
         this.callback = undefined;
     }
-    onDragStart(pointer) {
+    onDragStart(e) {
         this.dragging = true;
+        this.handle.on('pointerup', this.onDragEndBinded);
+        this.handle.on('pointerupoutside', this.onDragEndBinded);
+        this.handle.on('touchend', this.onDragEndBinded);
+        this.handle.on('touchendoutside', this.onDragEndBinded);
+        window.addEventListener('pointerup', this.onDragEndBinded);
+        window.addEventListener('touchend', this.onDragEndBinded);
+        window.addEventListener('pointermove', this.onDragBinded);
+        window.addEventListener('touchmove', this.onDragBinded);
     }
-    onDrag(pointer, dragX, dragY) {
-        // Local coordinates relative to the slider container
-        const localX = Phaser.Math.Clamp(dragX - this.x, 0, this.sliderWidth);
+    onDragEnd(e) {
+        this.dragging = false;
+        this.handle.off('pointerup', this.onDragEndBinded);
+        this.handle.off('pointerupoutside', this.onDragEndBinded);
+        this.handle.off('touchend', this.onDragEndBinded);
+        this.handle.off('touchendoutside', this.onDragEndBinded);
+        window.removeEventListener('pointerup', this.onDragEndBinded);
+        window.removeEventListener('touchend', this.onDragEndBinded);
+        window.removeEventListener('pointermove', this.onDragBinded);
+        window.removeEventListener('touchmove', this.onDragBinded);
+    }
+    onDrag(e) {
+        let clientX;
+        if (e && e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+        }
+        else if (e && typeof e.clientX === 'number') {
+            clientX = e.clientX;
+        }
+        if (clientX === undefined)
+            return;
+        // Convert global X to local X in handle's parent
+        const parent = this.handle.parentContainer || this;
+        const bounds = parent.getBounds();
+        const localX = Phaser.Math.Clamp(clientX - bounds.x, 0, this.sliderWidth);
         this.handle.x = localX;
         const t = this.handle.x / this.sliderWidth;
-        if (this.callback)
+        if (this.callback) {
             this.callback(t);
-    }
-    onDragEnd(pointer) {
-        this.dragging = false;
+        }
+        if (e.stopPropagation)
+            e.stopPropagation();
     }
 }
 //# sourceMappingURL=ZSlider.js.map

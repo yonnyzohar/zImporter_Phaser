@@ -65,8 +65,8 @@ export class ZTimeline extends ZContainer {
     }
     play() {
         ZUpdatables.addUpdateAble(this);
-        for (let i = 0; i < this.children.length; i++) {
-            const child = this.children[i];
+        for (let i = 0; i < this.list.length; i++) {
+            const child = this.list[i];
             if (child instanceof ZTimeline) {
                 child.play();
             }
@@ -74,8 +74,8 @@ export class ZTimeline extends ZContainer {
     }
     stop() {
         ZUpdatables.removeUpdateAble(this);
-        for (let i = 0; i < this.children.length; i++) {
-            const child = this.children[i];
+        for (let i = 0; i < this.list.length; i++) {
+            const child = this.list[i];
             if (child instanceof ZTimeline) {
                 child.stop();
             }
@@ -114,32 +114,48 @@ export class ZTimeline extends ZContainer {
                 if (this._frames[k][this.currentFrame]) {
                     const frame = this._frames[k][this.currentFrame];
                     if (this[k]) {
-                        if (frame.pivotX != undefined) {
-                            this[k].pivot.x = frame.pivotX;
-                        }
-                        if (frame.pivotY != undefined) {
-                            this[k].pivot.y = frame.pivotY;
+                        const child = this[k];
+                        // pivotX / pivotY — in Phaser these are handled differently per object type
+                        // For ZContainer children, pivot is handled via setOrigin of children
+                        // For Sprites/Images, we can adjust origin
+                        if (frame.pivotX != undefined && frame.pivotY != undefined) {
+                            if (typeof child.setOrigin === 'function' && typeof child.width === 'number' && child.width > 0) {
+                                child.setOrigin(frame.pivotX / child.width, frame.pivotY / child.height);
+                            }
+                            else if (child.currentTransform) {
+                                child.currentTransform.pivotX = frame.pivotX;
+                                child.currentTransform.pivotY = frame.pivotY;
+                            }
                         }
                         if (frame.scaleX != undefined) {
-                            this[k].scale.x = frame.scaleX;
+                            if (child.setScale) {
+                                child.setScale(frame.scaleX, frame.scaleY != undefined ? frame.scaleY : child.scaleY);
+                            }
+                            else {
+                                child.scaleX = frame.scaleX;
+                            }
                         }
-                        if (frame.scaleY != undefined) {
-                            this[k].scale.y = frame.scaleY;
+                        if (frame.scaleY != undefined && frame.scaleX == undefined) {
+                            if (child.setScale) {
+                                child.setScale(child.scaleX, frame.scaleY);
+                            }
+                            else {
+                                child.scaleY = frame.scaleY;
+                            }
                         }
                         if (frame.x != undefined) {
-                            this[k].x = frame.x;
+                            child.x = frame.x;
                         }
                         if (frame.y != undefined) {
-                            this[k].y = frame.y;
+                            child.y = frame.y;
                         }
                         if (frame.alpha != undefined) {
-                            this[k].alpha = frame.alpha;
+                            child.alpha = frame.alpha;
                         }
                         if (frame.rotation != undefined) {
-                            this[k].rotation = frame.rotation;
+                            child.rotation = frame.rotation;
                         }
                     }
-                    /**/
                 }
             }
         }

@@ -13,4 +13,9 @@ export var AnchorConsts;
 })(AnchorConsts || (AnchorConsts = {}));
 ;
 ;
+export class BitmapTextGradientData {
+    colors = [];
+    percentages = [];
+    fillGradientType = "vertical"; // Phaser does not have PIXI.TEXT_GRADIENT, so use string
+}
 //# sourceMappingURL=SceneData.js.map

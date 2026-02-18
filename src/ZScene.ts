@@ -7,21 +7,24 @@ import { ZToggle } from "./ZToggle";
 import { ZSlider } from "./ZSlider";
 import { ZScroll } from "./ZScroll";
 import { ZNineSlice } from "./ZNineSlice";
-import { SceneData, TemplateData, InstanceData, AnimTrackData, SpriteData, SpineData, NineSliceData, ParticleData, TextData, TextInputData, BaseAssetData } from "./SceneData";
+import { SceneData, TemplateData, InstanceData, AnimTrackData, SpriteData, SpineData, NineSliceData, ParticleData, TextData, TextInputData, BaseAssetData, BitmapFontLocked } from "./SceneData";
+import { ZTextInput } from "./ZTextInput";
+import { ZSpine } from "./ZSpine";
 
-export type AssetType = "btn" | "asset" | "state" | "toggle" | "none" | "slider" | "scrollBar" | "fullScreen";
+export type AssetType = "btn" | "asset" | "state" | "toggle" | "none" | "slider" | "scrollBar" | "fullScreen" | "animation";
 
 export class ZScene {
 
-  static assetTypes: Map<AssetType, any> = new Map([
+  static assetTypes: Map<AssetType, any> = new Map<AssetType, any>([
     ["btn", ZButton],
     ["asset", ZContainer],
     ["state", ZState],
     ["toggle", ZToggle],
     ["slider", ZSlider],
     ["scrollBar", ZScroll],
-    ["fullScreen", ZContainer]
-  ]);
+    ["fullScreen", ZContainer],
+    ["animation", ZTimeline]
+  ] as [AssetType, any][]);
 
   private assetBasePath: string = "";
   private _sceneStage!: ZContainer;
@@ -132,7 +135,7 @@ export class ZScene {
   applyFilters(obj: any, tf: Phaser.GameObjects.GameObject) {
     // Phaser does not support filters natively like Pixi, but you can use pipelines or shaders.
     // This is a stub for future custom pipeline integration.
-    if (obj.filters) {
+    if (obj.filters && Array.isArray(obj.filters)) {
       // Example: log filters for debugging
       for (const filter of obj.filters) {
         //console.log('Filter requested:', filter.type, filter);
@@ -153,13 +156,14 @@ export class ZScene {
   }
 
   // Add all children to the main stage
-  loadStage(): void {
+  // phaserScene param is accepted for API compatibility with PIXI version (ignored — scene reference is stored in constructor)
+  loadStage(phaserScene?: Phaser.Scene, loadChildren: boolean = true): void {
     this.resize(window.innerWidth, window.innerHeight);
 
     const stageAssets = this.data.stage;
     const children = stageAssets?.children;
 
-    if (children) {
+    if (children && loadChildren) {
       for (const child of children) {
         const tempName = child.name;
         const mc = this.spawn(tempName);
@@ -226,6 +230,22 @@ export class ZScene {
     for (const [mc] of this.resizeMap) {
       mc.resize(width, height, this.orientation);
     }
+  }
+
+  public get sceneWidth(): number {
+    let baseWidth = this.data.resolution.x;
+    if (this.orientation === "portrait") {
+      baseWidth = this.data.resolution.y;
+    }
+    return baseWidth;
+  }
+
+  public get sceneHeight(): number {
+    let baseHeight = this.data.resolution.y;
+    if (this.orientation === "portrait") {
+      baseHeight = this.data.resolution.x;
+    }
+    return baseHeight;
   }
 
   async load(assetBasePath: string, _loadCompleteFnctn: Function) {
@@ -396,27 +416,43 @@ export class ZScene {
     for (const childNode of baseNode.children) {
       const type = childNode.type;
       let asset: any;
-      /*
-      await new Promise<void>(async (resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 1000);
 
-      });*/
+      // inputField
+      if (type === "inputField") {
+        const inputData = childNode as TextInputData;
+        const textInput = new ZTextInput(this.phaserScene, inputData);
+        textInput.setName(inputData.name);
+        (mc as any)[inputData.name] = textInput;
+        mc.add(textInput);
+        this.applyFilters(childNode, textInput);
+        continue;
+      }
 
-      // Text (BitmapText preferred if font is available or uniqueFontName is present)
+      // bitmapFontLocked
+      if (type === "bitmapFontLocked") {
+        const textNode = childNode as BitmapFontLocked;
+        if (textNode.fontName && this.phaserScene.cache.bitmapFont.exists(textNode.fontName)) {
+          const tf = this.phaserScene.add.bitmapText(
+            textNode.x ?? 0,
+            textNode.y ?? 0,
+            textNode.fontName,
+            textNode.text || "",
+          );
+          if (textNode.textAnchorX !== undefined && textNode.textAnchorY !== undefined) {
+            tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
+          }
+          tf.setName(textNode.name);
+          (mc as any)[textNode.name] = tf;
+          mc.add(tf);
+          this.applyFilters(childNode, tf);
+        }
+        continue;
+      }
+
+      // textField / bitmapText
       if (type === "textField" || type === "bmpTextField" || type === "bitmapText") {
-        const textNode = childNode as TextData & {
-          textAnchorX?: number; textAnchorY?: number;
-          pivotX?: number; pivotY?: number;
-          stroke?: string; strokeThickness?: number;
-          wordWrap?: boolean; wordWrapWidth?: number; breakWords?: boolean;
-          leading?: number; letterSpacing?: number; padding?: number;
-          fontWeight?: string;
-          uniqueFontName?: string;
-        };
+        const textNode = childNode as TextData;
 
-        // Prefer uniqueFontName if present (Pixi logic)
         const fontKey = textNode.uniqueFontName || textNode.fontName;
         const hasBitmap = fontKey && this.phaserScene.cache.bitmapFont.exists(fontKey as string);
         if (hasBitmap) {
@@ -427,62 +463,67 @@ export class ZScene {
             textNode.text || "",
             (textNode.size as number) || undefined
           );
-          if (typeof textNode.letterSpacing === 'number' && (tf as any).setLetterSpacing) {
+          if (typeof textNode.letterSpacing === "number") {
             (tf as Phaser.GameObjects.BitmapText).setLetterSpacing(textNode.letterSpacing);
+          }
+          if (textNode.textAnchorX !== undefined && textNode.textAnchorY !== undefined) {
+            tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
           }
           tf.setName(textNode.name);
           mc.add(tf);
           (mc as any)[textNode.name] = tf;
+          this.applyFilters(childNode, tf);
         } else {
+          let colorStr = "#ffffff";
+          if (textNode.color) {
+            if (typeof textNode.color === "number") {
+              colorStr = "#" + textNode.color.toString(16).padStart(6, "0");
+            } else {
+              colorStr = textNode.color as string;
+            }
+          }
           const style: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontFamily: (textNode.fontName as string | undefined) || 'Arial',
-            fontSize: (typeof textNode.size === 'number') ? `${textNode.size}px` : textNode.size,
-            color: textNode.color || '#ffffff',
-            align: textNode.align || 'center',
+            fontFamily: (textNode.fontName as string | undefined) || "Arial",
+            fontSize: typeof textNode.size === "number" ? `${textNode.size}px` : textNode.size,
+            color: colorStr,
+            align: textNode.align || "left",
           };
-
-          // Phaser doesn’t support letterSpacing directly — requires bitmap or DOM text workaround
-          if (typeof textNode.fontWeight === 'string') {
-            // Phaser uses fontStyle for things like 'bold', 'italic'
+          if (typeof textNode.fontWeight === "string") {
             style.fontStyle = textNode.fontWeight;
           }
-
-          if (textNode.wordWrap && typeof textNode.wordWrapWidth === 'number') {
-            style.wordWrap = {
-              width: textNode.wordWrapWidth,
-              useAdvancedWrap: true
-            };
+          if (textNode.wordWrap && typeof textNode.wordWrapWidth === "number") {
+            style.wordWrap = { width: textNode.wordWrapWidth, useAdvancedWrap: true };
           }
-
-          // Create text
           const tf = this.phaserScene.add.text(
             textNode.x ?? 0,
             textNode.y ?? 0,
-            (textNode.text ?? '') + '',
+            (textNode.text ?? "") + "",
             style
           );
-
-          // Apply stroke
-          if (typeof textNode.stroke === 'string' && typeof textNode.strokeThickness === 'number') {
+          if (typeof textNode.stroke === "string" && typeof textNode.strokeThickness === "number") {
             tf.setStroke(textNode.stroke, textNode.strokeThickness);
           }
-
-          // Apply padding
-          if (typeof textNode.padding === 'number') {
+          if (typeof textNode.padding === "number") {
             tf.setPadding(textNode.padding);
           }
-
-          // Leading (line spacing)
-          if (typeof textNode.leading === 'number') {
+          if (typeof textNode.leading === "number") {
             tf.setLineSpacing(textNode.leading);
           }
-
-          // Set origin (anchors in PIXI map to origin in Phaser)
-          tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
-
+          if (textNode.dropShadow) {
+            const angle = textNode.dropShadowAngle ?? 0;
+            const dist = textNode.dropShadowDistance ?? 4;
+            const shadowColor = typeof textNode.dropShadowColor === "number"
+              ? "#" + textNode.dropShadowColor.toString(16).padStart(6, "0")
+              : (textNode.dropShadowColor as string) || "#000000";
+            tf.setShadow(Math.cos(angle) * dist, Math.sin(angle) * dist, shadowColor, textNode.dropShadowBlur ?? 0, false, true);
+          }
+          if (textNode.textAnchorX !== undefined && textNode.textAnchorY !== undefined) {
+            tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
+          }
           tf.setName(textNode.name);
           (mc as any)[textNode.name] = tf;
           mc.add(tf);
+          this.applyFilters(childNode, tf);
         }
       }
 
@@ -493,31 +534,22 @@ export class ZScene {
         if (this.usesAtlas) {
           const texture = this.scene;
           if (!texture) {
-            console.error('Cannot create sprite - atlas texture not loaded');
+            console.error("Cannot create sprite - atlas texture not loaded");
             continue;
           }
-          const hasFrame = texture.has(frameKey);
-          if (!hasFrame) {
-            console.warn('Frame not found in atlas:', frameKey, 'Available frames:', Object.keys(texture.frames).slice(0, 10).join(', '));
-          } else {
-            //console.log('Creating sprite:', frameKey, 'at', spriteNode.x, spriteNode.y, 'size:', spriteNode.width, spriteNode.height);
+          if (!texture.has(frameKey)) {
+            console.warn("Frame not found in atlas:", frameKey);
           }
-          asset = this.phaserScene.add.sprite(spriteNode.x, spriteNode.y, this.sceneName as string, frameKey);
-          if (!asset) {
-            console.error('Failed to create sprite for:', frameKey);
-            continue;
-          }
+          asset = this.phaserScene.add.sprite(spriteNode.x ?? 0, spriteNode.y ?? 0, this.sceneName as string, frameKey);
         } else {
-          asset = this.phaserScene.add.sprite(spriteNode.x, spriteNode.y, frameKey);
+          asset = this.phaserScene.add.sprite(spriteNode.x ?? 0, spriteNode.y ?? 0, frameKey);
         }
+        if (!asset) { console.error("Failed to create sprite for:", frameKey); continue; }
         asset.setDisplaySize(spriteNode.width, spriteNode.height);
-        // Handle pivot like PIXI version - set origin based on pivot
-        //const pivotX = (spriteNode as any).pivotX || 0;
-        //const pivotY = (spriteNode as any).pivotY || 0;
-        //asset.setOrigin(pivotX / spriteNode.width, pivotY / spriteNode.height);
         asset.setOrigin(0, 0);
         mc.add(asset);
         (mc as any)[spriteNode.name] = asset;
+        this.applyFilters(childNode, asset);
       }
 
       // 9-Slice
@@ -534,41 +566,85 @@ export class ZScene {
         this.addToResizeMap(nineSlice);
       }
 
+      // Asset / State / Button / Toggle / Slider / Scroll / Animation
       if (ZScene.isAssetType(type)) {
-        var instanceData = childNode as InstanceData;
-        //this will tell me fi this asses template has children with frames
-        var frames = this.getChildrenFrames(childNode.name);
-
+        const instanceData = childNode as InstanceData;
+        const frames = this.getChildrenFrames(childNode.name);
         if (Object.keys(frames).length > 0) {
           asset = new ZTimeline(this.phaserScene);
           asset.setFrames(frames);
-          if (this.data.cuePoints && this.data.cuePoints[childNode.name]) {
+          if (this.data.cuePoints?.[childNode.name]) {
             (asset as ZTimeline).setCuePoints(this.data.cuePoints[childNode.name]);
           }
-        }
-        else {
+        } else {
           asset = new (ZScene.getAssetType(type) || ZContainer)(this.phaserScene);
         }
-        //console.log("creation", instanceData.instanceName); // Should print "ZTimeline"
-        //console.log("constructor", asset.constructor.name); // Should print "ZTimeline"
-        //console.log("instanceof", asset instanceof ZTimeline);
-
         asset.name = instanceData.instanceName;
-        if (!asset.name) {
-          return;
-        }
+        if (!asset.name) { continue; }
         (mc as any)[asset.name] = asset;
-        //this.applyFilters(childNode, asset);
+        this.applyFilters(childNode, asset);
         asset.setInstanceData(instanceData, this.orientation);
         mc.add(asset);
         this.addToResizeMap(asset);
-
-
-        //console.log("after addition", instanceData.instanceName); // Should print "ZTimeline"
-        //console.log("constructor", asset.constructor.name); // Should print "ZTimeline"
-        //console.log("instanceof", asset instanceof ZTimeline);
       }
 
+      // Particle
+      if (type === "particle") {
+        const particleData = childNode as ParticleData;
+        let assetBasePath = this.assetBasePath;
+        if (!assetBasePath.endsWith("/")) assetBasePath += "/";
+        const pngPaths: string[] = Array.isArray(particleData.pngPaths)
+          ? particleData.pngPaths as unknown as string[]
+          : [particleData.pngPaths as unknown as string];
+        const textureKeys: string[] = [];
+        const loadPromises = pngPaths.map((pngPath: string) => {
+          return new Promise<void>((resolve) => {
+            const key = "particle_" + pngPath.replace(/[^a-zA-Z0-9]/g, "_");
+            textureKeys.push(key);
+            if (this.phaserScene.textures.exists(key)) { resolve(); return; }
+            this.phaserScene.load.image(key, assetBasePath + pngPath);
+            this.phaserScene.load.once("filecomplete-image-" + key, () => resolve());
+            this.phaserScene.load.once("loaderror", () => resolve());
+            this.phaserScene.load.start();
+          });
+        });
+        Promise.all(loadPromises).then(() => {
+          const jsonUrl = assetBasePath + particleData.jsonPath + "?t=" + Date.now();
+          fetch(jsonUrl)
+            .then(r => r.json())
+            .then((config: any) => {
+              try {
+                const key = textureKeys[0];
+                if (key && this.phaserScene.textures.exists(key)) {
+                  const particles = this.phaserScene.add.particles(0, 0, key, config);
+                  particles.setName(particleData.name || childNode.name);
+                  mc.add(particles);
+                  (mc as any)[childNode.name] = particles;
+                }
+              } catch (e) {
+                console.error("Error creating particle emitter:", e);
+              }
+            })
+            .catch(e => console.error("Failed to load particle config:", e));
+        });
+        continue;
+      }
+
+      // Spine
+      if (type === "spine") {
+        const spineData = childNode as SpineData;
+        let assetBasePath = this.assetBasePath;
+        if (!assetBasePath.endsWith("/")) assetBasePath += "/";
+        const zSpine = new ZSpine(this.phaserScene, spineData, assetBasePath);
+        zSpine.load((spineObj: any) => {
+          if (spineObj) {
+            spineObj.setName(spineData.name || childNode.name);
+            mc.add(spineObj);
+            (mc as any)[childNode.name] = spineObj;
+          }
+        });
+        continue;
+      }
 
       // Child templates
       const childTemplate = this.data.templates[childNode.name];

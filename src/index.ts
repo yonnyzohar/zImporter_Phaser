@@ -11,4 +11,6 @@ export { ZScroll } from './ZScroll';
 export { ZSlider } from './ZSlider';
 export { ZCuePointsManager } from './ZCuePointsManager';
 export { ZNineSlice } from './ZNineSlice';
+export { ZTextInput } from './ZTextInput';
+export { ZSpine } from './ZSpine';
 

@@ -1,4 +1,3 @@
-import Phaser from "phaser";
 import { ZContainer } from "./ZContainer";
 import { ZTimeline } from "./ZTimeline";
 import { ZState } from "./ZState";
@@ -7,6 +6,8 @@ import { ZToggle } from "./ZToggle";
 import { ZSlider } from "./ZSlider";
 import { ZScroll } from "./ZScroll";
 import { ZNineSlice } from "./ZNineSlice";
+import { ZTextInput } from "./ZTextInput";
+import { ZSpine } from "./ZSpine";
 export class ZScene {
     static assetTypes = new Map([
         ["btn", ZButton],
@@ -15,7 +16,8 @@ export class ZScene {
         ["toggle", ZToggle],
         ["slider", ZSlider],
         ["scrollBar", ZScroll],
-        ["fullScreen", ZContainer]
+        ["fullScreen", ZContainer],
+        ["animation", ZTimeline]
     ]);
     assetBasePath = "";
     _sceneStage;
@@ -34,6 +36,94 @@ export class ZScene {
         this.setOrientation();
         ZScene.Map.set(_sceneId, this);
     }
+    /**
+     * Destroys the scene and its assets, freeing resources.
+     */
+    async destroy() {
+        // Remove all children from the stage
+        if (this._sceneStage) {
+            this._sceneStage.removeAll(true);
+            if (this._sceneStage.scene) {
+                this._sceneStage.scene.children.remove(this._sceneStage);
+            }
+        }
+        // Remove textures if loaded
+        if (this.sceneName && this.phaserScene.textures.exists(this.sceneName)) {
+            this.phaserScene.textures.remove(this.sceneName);
+        }
+        // Optionally clear bitmap fonts
+        // (Phaser does not provide a direct API to remove bitmap fonts, but you can clear cache if needed)
+    }
+    /**
+     * Loads a bitmap font from XML and creates a bitmap text object.
+     * @param xmlUrl - The URL to the XML font data.
+     * @param textToDisplay - The text to display.
+     * @param fontName - The name of the font.
+     * @param fontSize - The size of the font.
+     * @param callback - Callback to invoke when the font is loaded.
+     * @returns A promise that resolves when the font is loaded.
+     */
+    async createBitmapTextFromXML(xmlUrl, textToDisplay, fontName, fontSize, callback) {
+        // Load the XML font data
+        const response = await fetch(xmlUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch XML font data: ${response.statusText}`);
+        }
+        const xmlData = await response.text();
+        // Parse XML to get the page file
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlData, "text/xml");
+        const pageElement = xmlDoc.querySelector("page");
+        if (!pageElement) {
+            throw new Error("Page element not found in XML");
+        }
+        const fileAttribute = pageElement.getAttribute("file");
+        if (!fileAttribute) {
+            throw new Error("Page file attribute not found in XML");
+        }
+        const textureUrl = this.assetBasePath + fileAttribute;
+        await this.loadTexture(textureUrl);
+        // Phaser will have loaded the bitmap font if it was queued in loadAssets
+        if (this.phaserScene.cache.bitmapFont.exists(fontName)) {
+            callback();
+        }
+        return null;
+    }
+    /**
+     * Loads a texture from a given URL.
+     * @param textureUrl - The URL of the texture.
+     * @returns A promise that resolves to the loaded Phaser.Texture.
+     */
+    loadTexture(textureUrl) {
+        return new Promise((resolve, reject) => {
+            // Phaser loads textures via the loader, so we add and start loading
+            const key = 'dynamic_' + Math.random().toString(36).substr(2, 9);
+            this.phaserScene.load.image(key, textureUrl);
+            this.phaserScene.load.once('filecomplete-image-' + key, () => {
+                resolve();
+            });
+            this.phaserScene.load.once('loaderror', (file) => {
+                if (file.key === key)
+                    reject(new Error('Failed to load texture.'));
+            });
+            this.phaserScene.load.start();
+        });
+    }
+    /**
+     * Applies visual filters (such as drop shadow) to a Phaser container or text.
+     * @param obj - The object containing filter data.
+     * @param tf - The Phaser GameObject to apply filters to.
+     */
+    applyFilters(obj, tf) {
+        // Phaser does not support filters natively like Pixi, but you can use pipelines or shaders.
+        // This is a stub for future custom pipeline integration.
+        if (obj.filters) {
+            // Example: log filters for debugging
+            for (const filter of obj.filters) {
+                //console.log('Filter requested:', filter.type, filter);
+            }
+        }
+    }
     get sceneStage() {
         return this._sceneStage;
     }
@@ -44,15 +134,14 @@ export class ZScene {
         return ZScene.Map.get(sceneId);
     }
     // Add all children to the main stage
-    loadStage() {
+    // phaserScene param is accepted for API compatibility with PIXI version (ignored — scene reference is stored in constructor)
+    loadStage(phaserScene, loadChildren = true) {
         this.resize(window.innerWidth, window.innerHeight);
         const stageAssets = this.data.stage;
         const children = stageAssets?.children;
-        console.log('Loading stage with', children?.length || 0, 'children');
-        if (children) {
+        if (children && loadChildren) {
             for (const child of children) {
                 const tempName = child.name;
-                console.log('Spawning template:', tempName);
                 const mc = this.spawn(tempName);
                 if (mc) {
                     // Set instance data BEFORE adding to stage (like PIXI version)
@@ -61,7 +150,7 @@ export class ZScene {
                     this._sceneStage.add(mc);
                     this._sceneStage[mc.name] = mc;
                     const bounds = mc.getBounds();
-                    console.log('Added to stage:', mc.name, 'visible:', mc.visible, 'alpha:', mc.alpha, 'bounds:', bounds.width, 'x', bounds.height, 'at', mc.x, mc.y);
+                    //console.log('Added to stage:', mc.name, 'visible:', mc.visible, 'alpha:', mc.alpha, 'bounds:', bounds.width, 'x', bounds.height, 'at', mc.x, mc.y);
                 }
                 else {
                     console.warn('Failed to spawn template:', tempName);
@@ -69,21 +158,8 @@ export class ZScene {
             }
         }
         this.phaserScene.add.existing(this._sceneStage);
-        console.log('Scene stage added. Total children:', this._sceneStage.list.length);
-        console.log('Scene stage position:', this._sceneStage.x, this._sceneStage.y);
-        console.log('Scene stage scale:', this._sceneStage.scaleX, this._sceneStage.scaleY);
-        console.log('Scene stage visible:', this._sceneStage.visible, 'alpha:', this._sceneStage.alpha);
-        console.log('Scene stage bounds:', this._sceneStage.getBounds());
-        // Log first child details for debugging
-        if (this._sceneStage.list.length > 0) {
-            const firstChild = this._sceneStage.list[0];
-            console.log('First child:', firstChild.name, 'type:', firstChild.constructor.name, 'children:', firstChild.list?.length || 0);
-            if (firstChild.list && firstChild.list.length > 0) {
-                const firstGrandchild = firstChild.list[0];
-                console.log('First grandchild:', firstGrandchild.name || 'unnamed', 'type:', firstGrandchild.constructor.name, 'visible:', firstGrandchild.visible, 'alpha:', firstGrandchild.alpha);
-            }
-        }
-        window.game = this._sceneStage;
+        //this needs to happen twice...
+        this.resize(window.innerWidth, window.innerHeight);
         this.resize(window.innerWidth, window.innerHeight);
     }
     /**
@@ -124,6 +200,33 @@ export class ZScene {
             mc.resize(width, height, this.orientation);
         }
     }
+    get sceneWidth() {
+        let baseWidth = this.data.resolution.x;
+        if (this.orientation === "portrait") {
+            baseWidth = this.data.resolution.y;
+        }
+        return baseWidth;
+    }
+    get sceneHeight() {
+        let baseHeight = this.data.resolution.y;
+        if (this.orientation === "portrait") {
+            baseHeight = this.data.resolution.x;
+        }
+        return baseHeight;
+    }
+    async load(assetBasePath, _loadCompleteFnctn) {
+        this._sceneStage = new ZContainer(this.phaserScene); // Will be added to scene later
+        this.assetBasePath = assetBasePath;
+        const placementsUrl = assetBasePath + "placements.json?rnd=" + Math.random();
+        try {
+            const response = await fetch(placementsUrl);
+            const placementsObj = await response.json();
+            this.loadAssets(assetBasePath, placementsObj, _loadCompleteFnctn);
+        }
+        catch (err) {
+            console.error("Failed to load placements:", err);
+        }
+    }
     /**
      * Loads the scene's assets and fonts, then initializes the scene.
      * @param assetBasePath - The base path for assets.
@@ -139,13 +242,13 @@ export class ZScene {
             const atlasImageUrl = assetBasePath + "ta.png?rnd=" + Math.random();
             // Add error handling for failed loads
             this.phaserScene.load.once('filecomplete-image-' + atlasKey, () => {
-                console.log('Atlas image loaded:', atlasKey);
+                //console.log('Atlas image loaded:', atlasKey);
             });
             this.phaserScene.load.once('filecomplete-json-' + atlasKey, () => {
-                console.log('Atlas JSON loaded:', atlasKey);
+                //console.log('Atlas JSON loaded:', atlasKey);
             });
             this.phaserScene.load.once('loaderror', (file) => {
-                console.error('Load error:', file.key, file.url, file.error);
+                //console.error('Load error:', file.key, file.url, file.error);
             });
             this.phaserScene.load.atlas(atlasKey, atlasImageUrl, atlasJsonUrl);
             this.phaserScene.load.once('complete', () => {
@@ -156,7 +259,6 @@ export class ZScene {
                 }
                 // Verify texture has frames
                 const frameCount = Object.keys(texture.frames).length;
-                console.log('Atlas loaded:', atlasKey, 'frames:', frameCount);
                 if (frameCount === 0) {
                     console.warn('Atlas has no frames! Check JSON format.');
                 }
@@ -176,17 +278,23 @@ export class ZScene {
                 this.phaserScene.load.image(img.alias, img.src);
             }
         });
-        // Optional: load bitmap fonts if provided (expects .png and .xml or .fnt next to each other)
+        // Load bitmap fonts if provided (expects .png and .fnt next to each other)
         if (placementsObj.fonts && placementsObj.fonts.length > 0) {
-            try {
-                for (const fontName of placementsObj.fonts) {
-                    const pngUrl = assetBasePath + fontName + '.png';
-                    const xmlUrl = assetBasePath + fontName + '.fnt';
-                    // Phaser will ignore if keys duplicate
-                    this.phaserScene.load.bitmapFont(fontName, pngUrl, xmlUrl);
-                }
+            let fontsLoaded = 0;
+            const fonts = placementsObj.fonts;
+            for (const fontName of fonts) {
+                const pngUrl = assetBasePath + fontName + '.png';
+                const xmlUrl = assetBasePath + fontName + '.fnt';
+                // Phaser will ignore if keys duplicate, but we want to ensure font is loaded before continuing
+                this.phaserScene.load.bitmapFont(fontName, pngUrl, xmlUrl);
             }
-            catch { }
+            this.phaserScene.load.once('complete', () => {
+                this.sceneName = 'images';
+                this.initScene(placementsObj);
+                _loadCompleteFnctn();
+            });
+            this.phaserScene.load.start();
+            return;
         }
         this.phaserScene.load.once('complete', () => {
             this.sceneName = 'images';
@@ -194,19 +302,6 @@ export class ZScene {
             _loadCompleteFnctn();
         });
         this.phaserScene.load.start();
-    }
-    async load(assetBasePath, _loadCompleteFnctn) {
-        this._sceneStage = new Phaser.GameObjects.Container(this.phaserScene); // Will be added to scene later
-        this.assetBasePath = assetBasePath;
-        const placementsUrl = assetBasePath + "placements.json?rnd=" + Math.random();
-        try {
-            const response = await fetch(placementsUrl);
-            const placementsObj = await response.json();
-            this.loadAssets(assetBasePath, placementsObj, _loadCompleteFnctn);
-        }
-        catch (err) {
-            console.error("Failed to load placements:", err);
-        }
     }
     initScene(_placementsObj) {
         this.data = _placementsObj;
@@ -262,52 +357,96 @@ export class ZScene {
         for (const childNode of baseNode.children) {
             const type = childNode.type;
             let asset;
-            // Text (BitmapText preferred if font is available)
-            if (type === "textField" || type === "bmpTextField") {
+            // inputField
+            if (type === "inputField") {
+                const inputData = childNode;
+                const textInput = new ZTextInput(this.phaserScene, inputData);
+                textInput.setName(inputData.name);
+                mc[inputData.name] = textInput;
+                mc.add(textInput);
+                this.applyFilters(childNode, textInput);
+                continue;
+            }
+            // bitmapFontLocked
+            if (type === "bitmapFontLocked") {
                 const textNode = childNode;
-                const hasBitmap = this.phaserScene.cache.bitmapFont.exists(textNode.fontName);
-                if (hasBitmap) {
-                    const tf = this.phaserScene.add.bitmapText(textNode.x, textNode.y, textNode.fontName, textNode.text || "", textNode.size || undefined);
-                    if (typeof textNode.letterSpacing === 'number' && tf.setLetterSpacing) {
-                        tf.setLetterSpacing(textNode.letterSpacing);
-                    }
-                    tf.setName(textNode.name);
-                    mc.add(tf);
-                    mc[textNode.name] = tf;
-                }
-                else {
-                    const style = {
-                        fontFamily: textNode.fontName,
-                        fontSize: textNode.size,
-                        color: textNode.color,
-                        align: textNode.align
-                    };
-                    if (typeof textNode.letterSpacing === 'number') {
-                        style.letterSpacing = textNode.letterSpacing;
-                    }
-                    if (typeof textNode.fontWeight === 'string') {
-                        style.fontStyle = textNode.fontWeight; // Phaser uses fontStyle e.g. 'bold'
-                    }
-                    if (textNode.wordWrap && typeof textNode.wordWrapWidth === 'number') {
-                        style.wordWrap = { width: textNode.wordWrapWidth, useAdvancedWrap: true };
-                    }
-                    const tf = this.phaserScene.add.text(textNode.x, textNode.y, (textNode.text ?? "") + "", style);
-                    if (typeof textNode.stroke === 'string' && typeof textNode.strokeThickness === 'number') {
-                        tf.setStroke(textNode.stroke, textNode.strokeThickness);
-                    }
-                    if (typeof textNode.padding === 'number') {
-                        tf.setPadding(textNode.padding);
-                    }
-                    if (typeof textNode.leading === 'number' && tf.setLineSpacing) {
-                        tf.setLineSpacing(textNode.leading);
-                    }
-                    if (typeof textNode.textAnchorX === 'number' && typeof textNode.textAnchorY === 'number') {
+                if (textNode.fontName && this.phaserScene.cache.bitmapFont.exists(textNode.fontName)) {
+                    const tf = this.phaserScene.add.bitmapText(textNode.x ?? 0, textNode.y ?? 0, textNode.fontName, textNode.text || "");
+                    if (textNode.textAnchorX !== undefined && textNode.textAnchorY !== undefined) {
                         tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
                     }
-                    // Pivot in PIXI is pixel-based; Phaser origin is normalized. Skipping exact pivot emulation.
                     tf.setName(textNode.name);
                     mc[textNode.name] = tf;
                     mc.add(tf);
+                    this.applyFilters(childNode, tf);
+                }
+                continue;
+            }
+            // textField / bitmapText
+            if (type === "textField" || type === "bmpTextField" || type === "bitmapText") {
+                const textNode = childNode;
+                const fontKey = textNode.uniqueFontName || textNode.fontName;
+                const hasBitmap = fontKey && this.phaserScene.cache.bitmapFont.exists(fontKey);
+                if (hasBitmap) {
+                    const tf = this.phaserScene.add.bitmapText(textNode.x, textNode.y, fontKey, textNode.text || "", textNode.size || undefined);
+                    if (typeof textNode.letterSpacing === "number") {
+                        tf.setLetterSpacing(textNode.letterSpacing);
+                    }
+                    if (textNode.textAnchorX !== undefined && textNode.textAnchorY !== undefined) {
+                        tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
+                    }
+                    tf.setName(textNode.name);
+                    mc.add(tf);
+                    mc[textNode.name] = tf;
+                    this.applyFilters(childNode, tf);
+                }
+                else {
+                    let colorStr = "#ffffff";
+                    if (textNode.color) {
+                        if (typeof textNode.color === "number") {
+                            colorStr = "#" + textNode.color.toString(16).padStart(6, "0");
+                        }
+                        else {
+                            colorStr = textNode.color;
+                        }
+                    }
+                    const style = {
+                        fontFamily: textNode.fontName || "Arial",
+                        fontSize: typeof textNode.size === "number" ? `${textNode.size}px` : textNode.size,
+                        color: colorStr,
+                        align: textNode.align || "left",
+                    };
+                    if (typeof textNode.fontWeight === "string") {
+                        style.fontStyle = textNode.fontWeight;
+                    }
+                    if (textNode.wordWrap && typeof textNode.wordWrapWidth === "number") {
+                        style.wordWrap = { width: textNode.wordWrapWidth, useAdvancedWrap: true };
+                    }
+                    const tf = this.phaserScene.add.text(textNode.x ?? 0, textNode.y ?? 0, (textNode.text ?? "") + "", style);
+                    if (typeof textNode.stroke === "string" && typeof textNode.strokeThickness === "number") {
+                        tf.setStroke(textNode.stroke, textNode.strokeThickness);
+                    }
+                    if (typeof textNode.padding === "number") {
+                        tf.setPadding(textNode.padding);
+                    }
+                    if (typeof textNode.leading === "number") {
+                        tf.setLineSpacing(textNode.leading);
+                    }
+                    if (textNode.dropShadow) {
+                        const angle = textNode.dropShadowAngle ?? 0;
+                        const dist = textNode.dropShadowDistance ?? 4;
+                        const shadowColor = typeof textNode.dropShadowColor === "number"
+                            ? "#" + textNode.dropShadowColor.toString(16).padStart(6, "0")
+                            : textNode.dropShadowColor || "#000000";
+                        tf.setShadow(Math.cos(angle) * dist, Math.sin(angle) * dist, shadowColor, textNode.dropShadowBlur ?? 0, false, true);
+                    }
+                    if (textNode.textAnchorX !== undefined && textNode.textAnchorY !== undefined) {
+                        tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
+                    }
+                    tf.setName(textNode.name);
+                    mc[textNode.name] = tf;
+                    mc.add(tf);
+                    this.applyFilters(childNode, tf);
                 }
             }
             // Sprite
@@ -317,35 +456,26 @@ export class ZScene {
                 if (this.usesAtlas) {
                     const texture = this.scene;
                     if (!texture) {
-                        console.error('Cannot create sprite - atlas texture not loaded');
+                        console.error("Cannot create sprite - atlas texture not loaded");
                         continue;
                     }
-                    const hasFrame = texture.has(frameKey);
-                    if (!hasFrame) {
-                        console.warn('Frame not found in atlas:', frameKey, 'Available frames:', Object.keys(texture.frames).slice(0, 10).join(', '));
+                    if (!texture.has(frameKey)) {
+                        console.warn("Frame not found in atlas:", frameKey);
                     }
-                    else {
-                        console.log('Creating sprite:', frameKey, 'at', spriteNode.x, spriteNode.y, 'size:', spriteNode.width, spriteNode.height);
-                    }
-                    asset = this.phaserScene.add.sprite(spriteNode.x, spriteNode.y, this.sceneName, frameKey);
-                    if (!asset) {
-                        console.error('Failed to create sprite for:', frameKey);
-                        continue;
-                    }
+                    asset = this.phaserScene.add.sprite(spriteNode.x ?? 0, spriteNode.y ?? 0, this.sceneName, frameKey);
                 }
                 else {
-                    asset = this.phaserScene.add.sprite(spriteNode.x, spriteNode.y, frameKey);
+                    asset = this.phaserScene.add.sprite(spriteNode.x ?? 0, spriteNode.y ?? 0, frameKey);
+                }
+                if (!asset) {
+                    console.error("Failed to create sprite for:", frameKey);
+                    continue;
                 }
                 asset.setDisplaySize(spriteNode.width, spriteNode.height);
-                // Handle pivot like PIXI version - set origin based on pivot
-                const pivotX = spriteNode.pivotX || 0;
-                const pivotY = spriteNode.pivotY || 0;
-                if (spriteNode.width && spriteNode.height && (pivotX !== 0 || pivotY !== 0)) {
-                    asset.setOrigin(pivotX / spriteNode.width, pivotY / spriteNode.height);
-                }
-                console.log('Sprite created:', asset.name || frameKey, 'visible:', asset.visible, 'alpha:', asset.alpha, 'size:', asset.width, asset.height);
+                asset.setOrigin(0, 0);
                 mc.add(asset);
                 mc[spriteNode.name] = asset;
+                this.applyFilters(childNode, asset);
             }
             // 9-Slice
             if (type === "9slice") {
@@ -356,17 +486,96 @@ export class ZScene {
                 const nineSlice = new ZNineSlice(this.phaserScene, 0, 0, textureKeyOrObj, frame, nineSliceData, this.orientation);
                 mc.add(nineSlice);
                 mc[nineSliceData.name] = nineSlice;
+                nineSlice.setDisplaySize(nineSliceData.width, nineSliceData.height);
+                nineSlice.setOrigin(0, 0);
                 this.addToResizeMap(nineSlice);
             }
+            // Asset / State / Button / Toggle / Slider / Scroll / Animation
+            if (ZScene.isAssetType(type)) {
+                const instanceData = childNode;
+                const frames = this.getChildrenFrames(childNode.name);
+                if (Object.keys(frames).length > 0) {
+                    asset = new ZTimeline(this.phaserScene);
+                    asset.setFrames(frames);
+                    if (this.data.cuePoints?.[childNode.name]) {
+                        asset.setCuePoints(this.data.cuePoints[childNode.name]);
+                    }
+                }
+                else {
+                    asset = new (ZScene.getAssetType(type) || ZContainer)(this.phaserScene);
+                }
+                asset.name = instanceData.instanceName;
+                if (!asset.name) {
+                    continue;
+                }
+                mc[asset.name] = asset;
+                this.applyFilters(childNode, asset);
+                asset.setInstanceData(instanceData, this.orientation);
+                mc.add(asset);
+                this.addToResizeMap(asset);
+            }
+            // Particle
+            if (type === "particle") {
+                const particleData = childNode;
+                let assetBasePath = this.assetBasePath;
+                if (!assetBasePath.endsWith("/"))
+                    assetBasePath += "/";
+                const pngPaths = Array.isArray(particleData.pngPaths)
+                    ? particleData.pngPaths
+                    : [particleData.pngPaths];
+                const textureKeys = [];
+                const loadPromises = pngPaths.map((pngPath) => {
+                    return new Promise((resolve) => {
+                        const key = "particle_" + pngPath.replace(/[^a-zA-Z0-9]/g, "_");
+                        textureKeys.push(key);
+                        if (this.phaserScene.textures.exists(key)) {
+                            resolve();
+                            return;
+                        }
+                        this.phaserScene.load.image(key, assetBasePath + pngPath);
+                        this.phaserScene.load.once("filecomplete-image-" + key, () => resolve());
+                        this.phaserScene.load.once("loaderror", () => resolve());
+                        this.phaserScene.load.start();
+                    });
+                });
+                Promise.all(loadPromises).then(() => {
+                    const jsonUrl = assetBasePath + particleData.jsonPath + "?t=" + Date.now();
+                    fetch(jsonUrl)
+                        .then(r => r.json())
+                        .then((config) => {
+                        try {
+                            const key = textureKeys[0];
+                            if (key && this.phaserScene.textures.exists(key)) {
+                                const particles = this.phaserScene.add.particles(0, 0, key, config);
+                                particles.setName(particleData.name || childNode.name);
+                                mc.add(particles);
+                                mc[childNode.name] = particles;
+                            }
+                        }
+                        catch (e) {
+                            console.error("Error creating particle emitter:", e);
+                        }
+                    })
+                        .catch(e => console.error("Failed to load particle config:", e));
+                });
+                continue;
+            }
             // Spine
-            /*
             if (type === "spine") {
-              const spineData = childNode as SpineData;
-              const zSpine = new ZSpine(spineData, this.assetBasePath);
-              await zSpine.load(this.phaserScene, (spine: any) => {
-                mc.add(spine);
-              });
-            }*/
+                const spineData = childNode;
+                let assetBasePath = this.assetBasePath;
+                if (!assetBasePath.endsWith("/"))
+                    assetBasePath += "/";
+                const zSpine = new ZSpine(this.phaserScene, spineData, assetBasePath);
+                zSpine.load((spineObj) => {
+                    if (spineObj) {
+                        spineObj.setName(spineData.name || childNode.name);
+                        mc.add(spineObj);
+                        mc[childNode.name] = spineObj;
+                    }
+                });
+                continue;
+            }
             // Child templates
             const childTemplate = this.data.templates[childNode.name];
             if (childTemplate?.children) {

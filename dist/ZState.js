@@ -9,7 +9,7 @@ export class ZState extends ZContainer {
     currentState = null;
     // Called once all children are added to the container
     init() {
-        this.setState("idle");
+        this.setViewState("idle");
     }
     getCurrentState() {
         return this.currentState;
@@ -17,38 +17,48 @@ export class ZState extends ZContainer {
     hasState(str) {
         return this.getChildByName(str) !== null;
     }
-    getAllStateNames() {
-        return this.list.map((child) => child.name);
+    /** Alias for setViewState — matches PIXI ZState API */
+    setState(str) {
+        if (typeof str === 'string') {
+            this.setViewState(str);
+        }
+        return this;
     }
     setViewState(str) {
-        let chosenChild = this.getChildByName(str);
+        let chosenChild = this.get(str);
         if (!chosenChild) {
-            chosenChild = this.getChildByName("idle");
-            if (!chosenChild) {
+            chosenChild = this.get("idle");
+            if (!chosenChild && this.list.length > 0) {
                 chosenChild = this.list[0];
             }
         }
-        // Hide all children and stop timelines
-        for (let i = 0; i < this.list.length; i++) {
-            const child = this.list[i];
-            child.visible = false;
-            if (child instanceof ZTimeline) {
-                child.stop();
+        if (this.list) {
+            for (let i = 0; i < this.list.length; i++) {
+                let child = this.list[i];
+                child.visible = false;
+                if (child instanceof ZTimeline) {
+                    child.stop();
+                }
             }
         }
-        // Show chosen child and play timeline if applicable
         if (chosenChild) {
             chosenChild.visible = true;
+            this.currentState = chosenChild;
+            if (chosenChild.parentContainer) {
+                chosenChild.parentContainer.bringToTop(chosenChild);
+            }
             if (chosenChild instanceof ZTimeline) {
                 chosenChild.play();
             }
+            return chosenChild;
         }
-        this.currentState = chosenChild;
-        // Bring chosen child to top of container
-        if (chosenChild && chosenChild.parentContainer) {
-            chosenChild.parentContainer.bringToTop(chosenChild);
-        }
-        return chosenChild;
+        return null;
+    }
+    getAllStateNames() {
+        return this.list.map((child) => child.name);
+    }
+    getType() {
+        return "ZState";
     }
 }
 //# sourceMappingURL=ZState.js.map

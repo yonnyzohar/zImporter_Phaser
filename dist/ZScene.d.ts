@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { ZContainer } from "./ZContainer";
 import { ZNineSlice } from "./ZNineSlice";
 import { SceneData, TemplateData, AnimTrackData } from "./SceneData";
-export type AssetType = "btn" | "asset" | "state" | "toggle" | "none" | "slider" | "scrollBar" | "fullScreen";
+export type AssetType = "btn" | "asset" | "state" | "toggle" | "none" | "slider" | "scrollBar" | "fullScreen" | "animation";
 export declare class ZScene {
     static assetTypes: Map<AssetType, any>;
     private assetBasePath;
@@ -46,7 +46,7 @@ export declare class ZScene {
     get sceneStage(): ZContainer;
     setOrientation(): void;
     static getSceneById(sceneId: string): ZScene | undefined;
-    loadStage(): void;
+    loadStage(phaserScene?: Phaser.Scene, loadChildren?: boolean): void;
     /**
      * Return the inner design resolution adjusted for current orientation.
      */
@@ -57,6 +57,8 @@ export declare class ZScene {
     addToResizeMap(mc: ZContainer | ZNineSlice): void;
     removeFromResizeMap(mc: ZContainer): void;
     resize(width: number, height: number): void;
+    get sceneWidth(): number;
+    get sceneHeight(): number;
     load(assetBasePath: string, _loadCompleteFnctn: Function): Promise<void>;
     /**
      * Loads the scene's assets and fonts, then initializes the scene.

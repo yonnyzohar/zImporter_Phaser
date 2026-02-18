@@ -24,6 +24,14 @@ export class ZState extends ZContainer {
         return this.getChildByName(str) !== null;
     }
 
+    /** Alias for setViewState — matches PIXI ZState API */
+    public setState(str: string | number): this {
+        if (typeof str === 'string') {
+            this.setViewState(str);
+        }
+        return this;
+    }
+
     public setViewState(str: string): ZContainer | null {
         let chosenChild = this.get(str) as ZContainer;
         if (!chosenChild) {

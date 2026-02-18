@@ -101,6 +101,10 @@ export interface SpineData extends BaseAssetData {
   pngFiles: string[];
   animations: string[];
   skin?: string;
+  playOnStart?: {
+    value: boolean;
+    animation: string;
+  };
 };
 
 export interface ParticleData extends BaseAssetData {
@@ -195,6 +199,24 @@ export interface TemplateData {
   type: string,
   name: string,
   children: BaseAssetData[],
+}
+
+/**
+ * BitmapFontLocked — a bitmap text element with a locked/fixed font.
+ * Mirrors the PIXI version for cross-engine compatibility.
+ */
+export interface BitmapFontLocked extends BaseAssetData {
+  fntPath?: string;
+  pngPath?: string;
+  fontName: string;
+  x?: number;
+  y?: number;
+  text?: string;
+  align?: string;
+  textAnchorX?: number;
+  textAnchorY?: number;
+  pivotX?: number;
+  pivotY?: number;
 }
 
 export interface AnimTrackData {

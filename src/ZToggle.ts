@@ -69,7 +69,7 @@ export class ZToggle extends ZState {
     }
 
     setLabelOnAllStates(label: string, str: string) {
-        let containers = this.getAll(label);
+        let containers = this.getAllByName(label);
         for (let container of containers) {
             (container as ZContainer).setText(str);
         }
