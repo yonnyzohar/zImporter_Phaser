@@ -56,13 +56,10 @@ export class ZSpine {
 
         try {
             if (data.spineAtlas && data.spineAtlas !== "") {
-                // Standard path: use the plugin's own loader extensions
-                await this.loadPluginFile(() =>
-                    (scene.load as any).spineJson(jsonKey, base + data.spineJson)
-                );
-                await this.loadPluginFile(() =>
-                    (scene.load as any).spineAtlas(atlasKey, base + data.spineAtlas)
-                );
+                // Standard path: queue both files then wait for the loader to complete
+                (scene.load as any).spineJson(jsonKey, base + data.spineJson);
+                (scene.load as any).spineAtlas(atlasKey, base + data.spineAtlas);
+                await this.waitForLoader();
             } else if (data.pngFiles && data.pngFiles.length > 0) {
                 // No-atlas path: load PNGs + JSON, build atlas manually, inject into plugin cache
                 await this.loadImages(data.pngFiles, base);
@@ -190,52 +187,39 @@ export class ZSpine {
 
     /** Load all PNG files into Phaser's texture cache. */
     private loadImages(pngFiles: string[], base: string): Promise<void> {
-        return new Promise<void>((resolve) => {
-            const pending: string[] = [];
-            for (const png of pngFiles) {
-                const key = this.texKey(png);
-                if (!this.phaserScene.textures.exists(key)) {
-                    this.phaserScene.load.image(key, base + png);
-                    pending.push(key);
-                }
+        let queued = 0;
+        for (const png of pngFiles) {
+            const key = this.texKey(png);
+            if (!this.phaserScene.textures.exists(key)) {
+                this.phaserScene.load.image(key, base + png);
+                queued++;
             }
-            if (pending.length === 0) { resolve(); return; }
-
-            let done = 0;
-            const onDone = (loadedKey: string) => {
-                if (!pending.includes(loadedKey)) return;
-                done++;
-                if (done >= pending.length) {
-                    this.phaserScene.load.off("filecomplete", onDone);
-                    resolve();
-                }
-            };
-            this.phaserScene.load.on("filecomplete", onDone);
-            this.phaserScene.load.start();
-        });
+        }
+        if (queued === 0) return Promise.resolve();
+        return this.waitForLoader();
     }
 
     /** Load a JSON file into Phaser's json cache. */
     private loadJsonFile(key: string, url: string): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            this.phaserScene.load.json(key, url);
-            this.phaserScene.load.once(`filecomplete-json-${key}`, () => resolve());
-            this.phaserScene.load.once("loaderror", (file: any) =>
-                reject(new Error(`ZSpine: Load error for ${file?.key ?? url}`))
-            );
-            this.phaserScene.load.start();
-        });
+        this.phaserScene.load.json(key, url);
+        return this.waitForLoader();
     }
 
-    /** Wrapper for a single plugin file loader call (spineJson / spineAtlas). */
-    private loadPluginFile(register: () => void): Promise<void> {
+    /** Wait for all currently queued loader files to finish. */
+    private waitForLoader(): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            register();
-            this.phaserScene.load.once("filecomplete", () => resolve());
-            this.phaserScene.load.once("loaderror", (file: any) =>
-                reject(new Error(`ZSpine: Load error for ${file?.key}`))
-            );
-            this.phaserScene.load.start();
+            if (!this.phaserScene.load.isLoading()) {
+                this.phaserScene.load.once("complete", () => resolve());
+                this.phaserScene.load.once("loaderror", (file: any) =>
+                    reject(new Error(`ZSpine: Load error for ${file?.key}`))
+                );
+                this.phaserScene.load.start();
+            } else {
+                this.phaserScene.load.once("complete", () => resolve());
+                this.phaserScene.load.once("loaderror", (file: any) =>
+                    reject(new Error(`ZSpine: Load error for ${file?.key}`))
+                );
+            }
         });
     }
 

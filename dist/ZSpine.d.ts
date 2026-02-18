@@ -30,8 +30,8 @@ export declare class ZSpine {
     private loadImages;
     /** Load a JSON file into Phaser's json cache. */
     private loadJsonFile;
-    /** Wrapper for a single plugin file loader call (spineJson / spineAtlas). */
-    private loadPluginFile;
+    /** Wait for all currently queued loader files to finish. */
+    private waitForLoader;
     private texKey;
     private fileName;
     private baseName;
