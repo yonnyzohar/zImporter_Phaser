@@ -20,10 +20,12 @@ export declare class ZSpine {
     constructor(scene: Phaser.Scene, spineData: SpineData, assetBasePath: string);
     load(callback: SpineCallback): Promise<void>;
     /**
-     * Builds a TextureAtlas directly from already-loaded Phaser textures,
-     * wires GLTexture (WebGL) or CanvasTexture wrappers, and injects into
-     * the SpinePlugin's atlasCache. getAtlas() checks atlasCache first —
-     * it returns the pre-built atlas directly without parsing any text file.
+     * Builds a TextureAtlas from already-loaded Phaser textures and injects it into
+     * the SpinePlugin's atlasCache.
+     *
+     * Mirrors the PIXI version: iterates every skin attachment in the raw skeleton and
+     * adds a 1×1 transparent fallback region for any name not covered by pngFiles, so
+     * missing assets produce a console warning instead of a hard crash.
      */
     private buildAndInjectAtlas;
     /** Load all PNG files into Phaser's texture cache. */

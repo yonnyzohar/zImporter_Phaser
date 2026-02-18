@@ -209,11 +209,12 @@ export class ZScene {
     const w = this.phaserScene.scale.width || window.innerWidth;
     const h = this.phaserScene.scale.height || window.innerHeight;
     this.resize(w, h);
+    this.resize(w, h);
     setTimeout(() => {
       const w2 = this.phaserScene.scale.width || window.innerWidth;
       const h2 = this.phaserScene.scale.height || window.innerHeight;
       this.resize(w2, h2);
-    }, 100);
+    }, 200);
   }
 
   /**

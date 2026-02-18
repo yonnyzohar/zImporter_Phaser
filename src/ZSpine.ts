@@ -61,10 +61,15 @@ export class ZSpine {
                 (scene.load as any).spineAtlas(atlasKey, base + data.spineAtlas);
                 await this.waitForLoader();
             } else if (data.pngFiles && data.pngFiles.length > 0) {
-                // No-atlas path: load PNGs + JSON, build atlas manually, inject into plugin cache
-                await this.loadImages(data.pngFiles, base);
+                // No-atlas path: load PNGs + JSON, build atlas manually, inject into plugin cache.
+                // Also fetch the raw skeleton to find any regions not listed in pngFiles and
+                // add transparent fallbacks for them — same behaviour as the PIXI version.
+                const [rawSkeleton] = await Promise.all([
+                    fetch(base + data.spineJson).then(r => r.json()),
+                    this.loadImages(data.pngFiles, base),
+                ]);
                 await this.loadJsonFile(jsonKey, base + data.spineJson);
-                this.buildAndInjectAtlas(atlasKey, data.pngFiles, spinePlugin);
+                this.buildAndInjectAtlas(atlasKey, data.pngFiles, rawSkeleton, spinePlugin);
             } else {
                 console.warn(`ZSpine: No atlas or pngFiles for "${data.name}"`);
                 callback(undefined);
@@ -99,12 +104,14 @@ export class ZSpine {
     }
 
     /**
-     * Builds a TextureAtlas directly from already-loaded Phaser textures,
-     * wires GLTexture (WebGL) or CanvasTexture wrappers, and injects into
-     * the SpinePlugin's atlasCache. getAtlas() checks atlasCache first —
-     * it returns the pre-built atlas directly without parsing any text file.
+     * Builds a TextureAtlas from already-loaded Phaser textures and injects it into
+     * the SpinePlugin's atlasCache.
+     *
+     * Mirrors the PIXI version: iterates every skin attachment in the raw skeleton and
+     * adds a 1×1 transparent fallback region for any name not covered by pngFiles, so
+     * missing assets produce a console warning instead of a hard crash.
      */
-    private buildAndInjectAtlas(atlasKey: string, pngFiles: string[], spinePlugin: SpinePlugin): void {
+    private buildAndInjectAtlas(atlasKey: string, pngFiles: string[], rawSkeleton: any, spinePlugin: SpinePlugin): void {
         const isWebGL: boolean = (spinePlugin as any).isWebGL;
         const gl: WebGLRenderingContext | null = (spinePlugin as any).gl;
 
@@ -176,6 +183,55 @@ export class ZSpine {
                 }
             }
         }
+
+        // --- Mirror PIXI: add transparent fallback for any region referenced by the
+        // skeleton but not supplied in pngFiles (warn instead of crash). ---
+        const knownRegions = new Set(atlas.regions.map((r: any) => r.name));
+
+        const fallbackCanvas = document.createElement("canvas");
+        fallbackCanvas.width = 1; fallbackCanvas.height = 1;
+        const fallbackImg = new Image(1, 1);
+        fallbackImg.src = fallbackCanvas.toDataURL();
+        const fallbackPage = new TextureAtlasPage("__fallback__.png");
+        fallbackPage.width = 1; fallbackPage.height = 1;
+        fallbackPage.minFilter = TextureFilter.Linear;
+        fallbackPage.magFilter = TextureFilter.Linear;
+        fallbackPage.uWrap = TextureWrap.ClampToEdge;
+        fallbackPage.vWrap = TextureWrap.ClampToEdge;
+        if (isWebGL && gl) {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { GLTexture } = require("@esotericsoftware/spine-webgl");
+            fallbackPage.setTexture(new GLTexture(gl, fallbackImg, false));
+        } else {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { CanvasTexture } = require("@esotericsoftware/spine-canvas");
+            fallbackPage.setTexture(new CanvasTexture(fallbackImg));
+        }
+
+        let fallbackPageAdded = false;
+        const skins: any[] = rawSkeleton?.skins ?? [];
+        for (const skin of skins) {
+            if (!skin.attachments) continue;
+            for (const slotAttachments of Object.values(skin.attachments) as any[]) {
+                for (const [attName, att] of Object.entries(slotAttachments) as [string, any][]) {
+                    const regionName: string = att?.path ?? attName;
+                    if (!knownRegions.has(regionName)) {
+                        console.warn(`ZSpine "${this.spineData.name}": region "${regionName}" not in pngFiles — using transparent fallback`);
+                        const fallback = new TextureAtlasRegion(fallbackPage, regionName);
+                        fallback.x = 0; fallback.y = 0;
+                        fallback.width = 1; fallback.height = 1;
+                        fallback.originalWidth = 1; fallback.originalHeight = 1;
+                        fallback.offsetX = 0; fallback.offsetY = 0;
+                        fallback.degrees = 0; fallback.index = -1;
+                        fallback.u = 0; fallback.v = 0; fallback.u2 = 1; fallback.v2 = 1;
+                        atlas.regions.push(fallback);
+                        knownRegions.add(regionName);
+                        fallbackPageAdded = true;
+                    }
+                }
+            }
+        }
+        if (fallbackPageAdded) atlas.pages.push(fallbackPage);
 
         const atlasCache: any = (spinePlugin as any).atlasCache;
         if (atlasCache) {
