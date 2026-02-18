@@ -148,7 +148,26 @@ export class ZScene {
   }
 
   public setOrientation(): void {
-    this.orientation = window.innerWidth > window.innerHeight ? "landscape" : "portrait";
+    // Use the Phaser scene's scale dimensions (actual game canvas) if available,
+    // falling back to window dimensions. Also consider the design resolution as a
+    // tiebreaker when width === height.
+    let w: number;
+    let h: number;
+    if (this.phaserScene?.scale) {
+      w = this.phaserScene.scale.width;
+      h = this.phaserScene.scale.height;
+    } else {
+      w = window.innerWidth;
+      h = window.innerHeight;
+    }
+    // If dimensions are equal or not yet available, fall back to design resolution
+    if (w === h || w === 0 || h === 0) {
+      if (this.data?.resolution) {
+        this.orientation = this.data.resolution.x >= this.data.resolution.y ? "landscape" : "portrait";
+        return;
+      }
+    }
+    this.orientation = w > h ? "landscape" : "portrait";
   }
 
   public static getSceneById(sceneId: string): ZScene | undefined {
@@ -158,7 +177,13 @@ export class ZScene {
   // Add all children to the main stage
   // phaserScene param is accepted for API compatibility with PIXI version (ignored — scene reference is stored in constructor)
   loadStage(phaserScene?: Phaser.Scene, loadChildren: boolean = true): void {
-    this.resize(window.innerWidth, window.innerHeight);
+    // Always spawn objects with "portrait" orientation first.
+    // This ensures all setInstanceData calls inside createAsset() see
+    // parentContainer.currentTransform === undefined (the else-branch in
+    // applyTransform), so no pivot is subtracted during construction.
+    // The subsequent resize() call then correctly transitions to the actual
+    // orientation — mirroring the portrait→landscape path that always works.
+    this.orientation = "portrait";
 
     const stageAssets = this.data.stage;
     const children = stageAssets?.children;
@@ -173,8 +198,6 @@ export class ZScene {
           this.addToResizeMap(mc);
           this._sceneStage.add(mc);
           (this._sceneStage as any)[mc.name] = mc;
-          const bounds = mc.getBounds();
-          //console.log('Added to stage:', mc.name, 'visible:', mc.visible, 'alpha:', mc.alpha, 'bounds:', bounds.width, 'x', bounds.height, 'at', mc.x, mc.y);
         } else {
           console.warn('Failed to spawn template:', tempName);
         }
@@ -182,11 +205,14 @@ export class ZScene {
     }
 
     this.phaserScene.add.existing(this._sceneStage);
-    //this needs to happen twice...
-    this.resize(window.innerWidth, window.innerHeight);
+    // Resize to actual window orientation now that the full hierarchy is built.
+    const w = this.phaserScene.scale.width || window.innerWidth;
+    const h = this.phaserScene.scale.height || window.innerHeight;
+    this.resize(w, h);
     setTimeout(() => {
-
-      this.resize(window.innerWidth, window.innerHeight);
+      const w2 = this.phaserScene.scale.width || window.innerWidth;
+      const h2 = this.phaserScene.scale.height || window.innerHeight;
+      this.resize(w2, h2);
     }, 100);
   }
 
@@ -230,6 +256,14 @@ export class ZScene {
     this._sceneStage.setScale(scale);
     this._sceneStage.setPosition((width - baseWidth * scale) / 2, (height - baseHeight * scale) / 2);
 
+    // Pass 1: update currentTransform for all containers (so parent transforms are
+    // current before children read them in applyTransform).
+    for (const [mc] of this.resizeMap) {
+      (mc as any).currentTransform = this.orientation === "portrait"
+        ? (mc as any).portrait
+        : (mc as any).landscape;
+    }
+    // Pass 2: apply transforms now that all parents have the correct currentTransform.
     for (const [mc] of this.resizeMap) {
       mc.resize(width, height, this.orientation);
     }

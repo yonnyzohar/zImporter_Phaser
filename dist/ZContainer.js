@@ -208,6 +208,9 @@ export class ZContainer extends Phaser.GameObjects.Container {
         const pivotX = (this.currentTransform.pivotX) || 0;
         const pivotY = (this.currentTransform.pivotY) || 0;
         this.list.forEach(child => {
+            // Skip children that manage their own position via fitToScreen
+            if (child._fitToScreen)
+                return;
             let childTransform = child.currentTransform;
             if (childTransform) {
                 child.setX(childTransform.x - pivotX);
@@ -225,47 +228,69 @@ export class ZContainer extends Phaser.GameObjects.Container {
     }
     executeFitToScreen() {
         if (this.list.length === 0)
-            return; // No children to fit
-        // Set the origin of the container to (0, 0)
-        //this.setOrigin(0, 0);
-        // Get the screen dimensions
+            return;
         const screenWidth = this.scene.scale.width;
         const screenHeight = this.scene.scale.height;
-        // Find the top-left corner of the screen in local space
-        const topLeft = this.parentContainer
-            ? this.parentContainer.getWorldTransformMatrix().applyInverse(0, 0)
-            : { x: 0, y: 0 };
-        const globalRightOrBottom = this.parentContainer
-            ? this.parentContainer.getWorldTransformMatrix().applyInverse(screenWidth, screenHeight)
-            : { x: screenWidth, y: screenHeight };
-        //console.log(this.x, this.y, this.name);
-        this.setX(topLeft.x);
-        this.setY(topLeft.y);
-        //console.log("Top Left:", topLeft, this.name);
-        return;
-        const newWidth = globalRightOrBottom.x - topLeft.x;
-        const newHeight = globalRightOrBottom.y - topLeft.y;
-        const globalMid = this.parentContainer
-            ? this.parentContainer.getWorldTransformMatrix().applyInverse(screenWidth / 2, screenHeight / 2)
-            : { x: screenWidth / 2, y: screenHeight / 2 };
+        // Reset scale so measurements are at natural size
+        this.setScale(1, 1);
+        // Helper: convert a world-space point to parent-local coords
+        const parentMat = this.parentContainer
+            ? this.parentContainer.getWorldTransformMatrix()
+            : null;
+        const toLocal = (wx, wy) => parentMat ? parentMat.applyInverse(wx, wy) : { x: wx, y: wy };
+        // Screen corners in parent-local space
+        const topLeft = toLocal(0, 0);
+        const btmRight = toLocal(screenWidth, screenHeight);
+        const mid = toLocal(screenWidth / 2, screenHeight / 2);
+        // Local dimensions of the screen (accounts for parent scale/rotation)
+        const localScreenW = btmRight.x - topLeft.x;
+        const localScreenH = btmRight.y - topLeft.y;
+        // Position container at top-left of screen
+        this.x = topLeft.x;
+        this.y = topLeft.y;
+        const firstChild = this.list[0];
+        const isNineSlice = firstChild instanceof Phaser.GameObjects.NineSlice;
+        if (isNineSlice) {
+            firstChild.width = localScreenW;
+            firstChild.height = localScreenH;
+            return;
+        }
+        // Get natural content bounds in world space at scale=1
+        const naturalBounds = this.getBounds();
+        if (naturalBounds.width === 0 || naturalBounds.height === 0)
+            return;
+        // Natural content size in parent-local units
+        const pScaleX = parentMat ? this._getParentWorldScaleX() : 1;
+        const pScaleY = parentMat ? this._getParentWorldScaleY() : 1;
+        const localContentW = naturalBounds.width / pScaleX;
+        const localContentH = naturalBounds.height / pScaleY;
+        let scale;
         if (screenWidth > screenHeight) {
-            this.list.forEach(child => {
-                child.displayWidth = newWidth;
-                child.scaleY = child.scaleX;
-            });
-            this.setX(globalMid.x - newWidth / 2);
-            this.setY(globalMid.y - this.list[0].displayHeight / 2);
+            // Landscape: scale to fill width
+            scale = localScreenW / localContentW;
         }
         else {
-            this.list.forEach(child => {
-                child.displayHeight = newHeight;
-                child.scaleX = child.scaleY;
-            });
-            this.setX(globalMid.x - this.list[0].displayWidth / 2);
-            this.setY(globalMid.y - newHeight / 2);
+            // Portrait: scale to fill height
+            scale = localScreenH / localContentH;
         }
-        console.log("Fitting to screen:", screenWidth, newWidth, screenHeight, newHeight);
-        return;
+        this.setScale(scale, scale);
+        // Center around screen midpoint
+        const displayedW = localContentW * scale;
+        const displayedH = localContentH * scale;
+        this.x = mid.x - displayedW / 2;
+        this.y = mid.y - displayedH / 2;
+    }
+    _getParentWorldScaleX() {
+        if (!this.parentContainer)
+            return 1;
+        const mat = this.parentContainer.getWorldTransformMatrix();
+        return Math.sqrt(mat.a * mat.a + mat.b * mat.b);
+    }
+    _getParentWorldScaleY() {
+        if (!this.parentContainer)
+            return 1;
+        const mat = this.parentContainer.getWorldTransformMatrix();
+        return Math.sqrt(mat.c * mat.c + mat.d * mat.d);
     }
     /**/
     setX(value) {

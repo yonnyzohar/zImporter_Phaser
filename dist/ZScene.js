@@ -117,7 +117,7 @@ export class ZScene {
     applyFilters(obj, tf) {
         // Phaser does not support filters natively like Pixi, but you can use pipelines or shaders.
         // This is a stub for future custom pipeline integration.
-        if (obj.filters) {
+        if (obj.filters && Array.isArray(obj.filters)) {
             // Example: log filters for debugging
             for (const filter of obj.filters) {
                 //console.log('Filter requested:', filter.type, filter);
@@ -128,7 +128,27 @@ export class ZScene {
         return this._sceneStage;
     }
     setOrientation() {
-        this.orientation = window.innerWidth > window.innerHeight ? "landscape" : "portrait";
+        // Use the Phaser scene's scale dimensions (actual game canvas) if available,
+        // falling back to window dimensions. Also consider the design resolution as a
+        // tiebreaker when width === height.
+        let w;
+        let h;
+        if (this.phaserScene?.scale) {
+            w = this.phaserScene.scale.width;
+            h = this.phaserScene.scale.height;
+        }
+        else {
+            w = window.innerWidth;
+            h = window.innerHeight;
+        }
+        // If dimensions are equal or not yet available, fall back to design resolution
+        if (w === h || w === 0 || h === 0) {
+            if (this.data?.resolution) {
+                this.orientation = this.data.resolution.x >= this.data.resolution.y ? "landscape" : "portrait";
+                return;
+            }
+        }
+        this.orientation = w > h ? "landscape" : "portrait";
     }
     static getSceneById(sceneId) {
         return ZScene.Map.get(sceneId);
@@ -136,7 +156,9 @@ export class ZScene {
     // Add all children to the main stage
     // phaserScene param is accepted for API compatibility with PIXI version (ignored — scene reference is stored in constructor)
     loadStage(phaserScene, loadChildren = true) {
-        this.resize(window.innerWidth, window.innerHeight);
+        const gameW = this.phaserScene.scale.width || window.innerWidth;
+        const gameH = this.phaserScene.scale.height || window.innerHeight;
+        this.resize(gameW, gameH);
         const stageAssets = this.data.stage;
         const children = stageAssets?.children;
         if (children && loadChildren) {
@@ -159,8 +181,14 @@ export class ZScene {
         }
         this.phaserScene.add.existing(this._sceneStage);
         //this needs to happen twice...
-        this.resize(window.innerWidth, window.innerHeight);
-        this.resize(window.innerWidth, window.innerHeight);
+        const w = this.phaserScene.scale.width || window.innerWidth;
+        const h = this.phaserScene.scale.height || window.innerHeight;
+        this.resize(w, h);
+        setTimeout(() => {
+            const w2 = this.phaserScene.scale.width || window.innerWidth;
+            const h2 = this.phaserScene.scale.height || window.innerHeight;
+            this.resize(w2, h2);
+        }, 100);
     }
     /**
      * Return the inner design resolution adjusted for current orientation.
@@ -196,6 +224,14 @@ export class ZScene {
         const scale = Math.min(scaleX, scaleY);
         this._sceneStage.setScale(scale);
         this._sceneStage.setPosition((width - baseWidth * scale) / 2, (height - baseHeight * scale) / 2);
+        // Pass 1: update currentTransform for all containers (so parent transforms are
+        // current before children read them in applyTransform).
+        for (const [mc] of this.resizeMap) {
+            mc.currentTransform = this.orientation === "portrait"
+                ? mc.portrait
+                : mc.landscape;
+        }
+        // Pass 2: apply transforms now that all parents have the correct currentTransform.
         for (const [mc] of this.resizeMap) {
             mc.resize(width, height, this.orientation);
         }
@@ -572,6 +608,10 @@ export class ZScene {
                         spineObj.setName(spineData.name || childNode.name);
                         mc.add(spineObj);
                         mc[childNode.name] = spineObj;
+                        // Re-apply the container's transform so the spine object gets the
+                        // correct pivot offset (setOrigin runs on mc.list, which was empty
+                        // when setInstanceData first ran before this async callback fired).
+                        mc.applyTransform();
                     }
                 });
                 continue;
