@@ -151,12 +151,12 @@ export class ZContainer extends Phaser.GameObjects.Container {
             let parentPivotX = parentContainer.currentTransform.pivotX || 0;
             let parentPivotY = parentContainer.currentTransform.pivotY || 0;
 
-            this.x = ((this.currentTransform.x - parentPivotX) || 0);
-            this.y = ((this.currentTransform.y - parentPivotY) || 0);
+            this.setX((this.currentTransform.x - parentPivotX) || 0);
+            this.setY((this.currentTransform.y - parentPivotY) || 0);
         }
         else {
-            this.x = this.currentTransform.x || 0;
-            this.y = this.currentTransform.y || 0;
+            this.setX(this.currentTransform.x || 0);
+            this.setY(this.currentTransform.y || 0);
         }
 
         this.rotation = this.currentTransform.rotation || 0;
@@ -173,7 +173,6 @@ export class ZContainer extends Phaser.GameObjects.Container {
         if (!this.graphics) {
             this.graphics = this.scene.add.graphics();
             this.graphics.setDepth(9999);
-
         }
 
         this.graphics.clear();
@@ -195,12 +194,12 @@ export class ZContainer extends Phaser.GameObjects.Container {
         this.list.forEach(child => {
             let childTransform = (child as any).currentTransform;
             if (childTransform) {
-                (child as any).x = childTransform.x - pivotX;
-                (child as any).y = childTransform.y - pivotY;
+                (child as any).setX(childTransform.x - pivotX);
+                (child as any).setY(childTransform.y - pivotY);
             }
             else {
-                (child as any).x = -pivotX;
-                (child as any).y = -pivotY;
+                (child as any).setX(-pivotX);
+                (child as any).setY(-pivotY);
             }
 
         });
@@ -229,8 +228,11 @@ export class ZContainer extends Phaser.GameObjects.Container {
                 screenHeight
             )
             : { x: screenWidth, y: screenHeight };
+        //console.log(this.x, this.y, this.name);
         this.setX(topLeft.x);
         this.setY(topLeft.y);
+        //console.log("Top Left:", topLeft, this.name);
+        return;
         const newWidth = globalRightOrBottom.x - topLeft.x;
         const newHeight = globalRightOrBottom.y - topLeft.y;
         const globalMid = this.parentContainer
@@ -257,25 +259,15 @@ export class ZContainer extends Phaser.GameObjects.Container {
             this.setY(globalMid.y - newHeight / 2);
         }
 
-
-
-
-
-
-
-
-
         console.log("Fitting to screen:", screenWidth, newWidth, screenHeight, newHeight);
         return;
-
-
     }
-
+    /**/
     public setX(value?: number | undefined): this {
 
         super.setX(value);
         if (this.currentTransform) {
-            this.currentTransform.x = value!;
+            //this.currentTransform.x = value!;
         }
         return this;
     }
@@ -284,7 +276,7 @@ export class ZContainer extends Phaser.GameObjects.Container {
 
         super.setY(value);
         if (this.currentTransform) {
-            this.currentTransform.y = value!;
+            //this.currentTransform.y = value!;
         }
         return this;
     }
@@ -292,7 +284,7 @@ export class ZContainer extends Phaser.GameObjects.Container {
     public setWidth(value: number): this {
         super.setSize(value, this.height);
         if (this.currentTransform) {
-            this.currentTransform.width = value;
+            //this.currentTransform.width = value;
         }
         return this;
     }
@@ -300,7 +292,7 @@ export class ZContainer extends Phaser.GameObjects.Container {
     public setHeight(value: number): this {
         super.setSize(this.width, value);
         if (this.currentTransform) {
-            this.currentTransform.height = value;
+            //this.currentTransform.height = value;
         }
         return this;
     }
@@ -308,7 +300,7 @@ export class ZContainer extends Phaser.GameObjects.Container {
     public setScaleX(x?: number): this {
         super.setScale(x, this.scaleY);
         if (this.currentTransform) {
-            this.currentTransform.scaleX = x!;
+            //this.currentTransform.scaleX = x!;
         }
         return this;
 
@@ -317,7 +309,7 @@ export class ZContainer extends Phaser.GameObjects.Container {
     public setScaleY(y?: number): this {
         super.setScale(this.scaleX, y);
         if (this.currentTransform) {
-            this.currentTransform.scaleY = y!;
+            //this.currentTransform.scaleY = y!;
         }
         return this;
     }
