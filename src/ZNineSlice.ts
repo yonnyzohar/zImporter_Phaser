@@ -55,17 +55,20 @@ export class ZNineSlice extends Phaser.GameObjects.NineSlice {
         const h = this.currentTransform.height || this._nineSliceData?.height || 1;
         this.setSize(w, h);
 
-        // Position — subtract parent container's pivot, mirroring ZContainer.applyTransform()
-        const parentTransform = (this.parentContainer as any)?.currentTransform;
-        const parentPivotX = parentTransform?.pivotX || 0;
-        const parentPivotY = parentTransform?.pivotY || 0;
+        // Position & scale — mirror ZContainer.applyTransform():
+        // parent pivot is already absorbed into the parent container's own x/y,
+        // so we only need to subtract our own pivot × own scale here.
+        const scaleX = this.currentTransform.scaleX || 1;
+        const scaleY = this.currentTransform.scaleY || 1;
+        const ownPivotX = this.currentTransform.pivotX || 0;
+        const ownPivotY = this.currentTransform.pivotY || 0;
         this.setPosition(
-            (this.currentTransform.x || 0) - parentPivotX,
-            (this.currentTransform.y || 0) - parentPivotY
+            (this.currentTransform.x || 0) - scaleX * ownPivotX,
+            (this.currentTransform.y || 0) - scaleY * ownPivotY
         );
 
         // Scale, rotation, alpha, visibility
-        this.setScale(this.currentTransform.scaleX || 1, this.currentTransform.scaleY || 1);
+        this.setScale(scaleX, scaleY);
         this.rotation = this.currentTransform.rotation || 0;
         this.alpha = this.currentTransform.alpha ?? 1;
         this.visible = this.currentTransform.visible !== false;

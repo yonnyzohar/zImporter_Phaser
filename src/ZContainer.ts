@@ -206,27 +206,20 @@ export class ZContainer extends Phaser.GameObjects.Container {
             }
         }
 
-        let parentContainer = this.parentContainer as ZContainer;
-        if (parentContainer && parentContainer.currentTransform) {
-            let parentPivotX = parentContainer.currentTransform.pivotX || 0;
-            let parentPivotY = parentContainer.currentTransform.pivotY || 0;
+        // In PIXI, container.pivot shifts the container's own registration point — it does NOT
+        // move children. We emulate this by absorbing (scale × ownPivot) into the container's
+        // Phaser x/y. Children keep their raw data.x / data.y values untouched.
+        const scaleX = this.currentTransform.scaleX || 1;
+        const scaleY = this.currentTransform.scaleY || 1;
+        const ownPivotX = this.currentTransform.pivotX || 0;
+        const ownPivotY = this.currentTransform.pivotY || 0;
 
-            this.setX((this.currentTransform.x - parentPivotX) || 0);
-            this.setY((this.currentTransform.y - parentPivotY) || 0);
-        }
-        else {
-            this.setX(this.currentTransform.x || 0);
-            this.setY(this.currentTransform.y || 0);
-        }
+        this.x = (this.currentTransform.x || 0) - scaleX * ownPivotX;
+        this.y = (this.currentTransform.y || 0) - scaleY * ownPivotY;
 
         this.rotation = this.currentTransform.rotation || 0;
         this.alpha = this.currentTransform.alpha ?? 1;
-        this.setScale(this.currentTransform.scaleX || 1, this.currentTransform.scaleY || 1);
-
-        // Handle pivot - Phaser Containers don't have pivot, so we adjust children positions
-        // This mimics PIXI's pivot behavior
-
-        this.setOrigin();
+        this.setScale(scaleX, scaleY);
 
         this.applyAnchor();
         /*
