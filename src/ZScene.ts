@@ -184,7 +184,10 @@ export class ZScene {
     this.phaserScene.add.existing(this._sceneStage);
     //this needs to happen twice...
     this.resize(window.innerWidth, window.innerHeight);
-    this.resize(window.innerWidth, window.innerHeight);
+    setTimeout(() => {
+
+      this.resize(window.innerWidth, window.innerHeight);
+    }, 100);
   }
 
   /**
@@ -641,6 +644,10 @@ export class ZScene {
             spineObj.setName(spineData.name || childNode.name);
             mc.add(spineObj);
             (mc as any)[childNode.name] = spineObj;
+            // Re-apply the container's transform so the spine object gets the
+            // correct pivot offset (setOrigin runs on mc.list, which was empty
+            // when setInstanceData first ran before this async callback fired).
+            mc.applyTransform();
           }
         });
         continue;
