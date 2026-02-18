@@ -457,12 +457,16 @@ export class ZScene {
 
       // inputField
       if (type === "inputField") {
-        const inputData = childNode as TextInputData;
-        const textInput = new ZTextInput(this.phaserScene, inputData);
-        textInput.setName(inputData.name);
-        (mc as any)[inputData.name] = textInput;
-        mc.add(textInput);
-        this.applyFilters(childNode, textInput);
+        try {
+          const inputData = childNode as TextInputData;
+          const textInput = new ZTextInput(this.phaserScene, inputData);
+          textInput.setName(inputData.name);
+          (mc as any)[inputData.name] = textInput;
+          mc.add(textInput);
+          this.applyFilters(childNode, textInput);
+        } catch (e) {
+          console.warn(`ZScene: Failed to create inputField "${(childNode as any).name}":`, e);
+        }
         continue;
       }
 
@@ -599,8 +603,6 @@ export class ZScene {
         const nineSlice = new ZNineSlice(this.phaserScene, 0, 0, textureKeyOrObj, frame, nineSliceData, this.orientation);
         mc.add(nineSlice);
         (mc as any)[nineSliceData.name] = nineSlice;
-        nineSlice.setDisplaySize(nineSliceData.width, nineSliceData.height);
-        nineSlice.setOrigin(0, 0);
         this.addToResizeMap(nineSlice);
       }
 
