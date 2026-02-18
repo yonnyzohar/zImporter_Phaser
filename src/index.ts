@@ -13,4 +13,5 @@ export { ZCuePointsManager } from './ZCuePointsManager';
 export { ZNineSlice } from './ZNineSlice';
 export { ZTextInput } from './ZTextInput';
 export { ZSpine } from './ZSpine';
+export { SpinePlugin } from '@esotericsoftware/spine-phaser';
 

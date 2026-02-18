@@ -7,6 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.js"></script>
     <!-- Load your compiled bundle -->
     <script src="./dist/zimporter-phaser.min.js"></script>
+    <!-- Spine 4.x IIFE bundle for use in the browser -->
+    <script src="./node_modules/@esotericsoftware/spine-phaser/dist/iife/spine-phaser.js"></script>
     <style>
         body {
             margin: 0;
@@ -72,6 +74,13 @@
             scale: {
                 mode: Phaser.Scale.RESIZE,
                 autoCenter: Phaser.Scale.CENTER_BOTH
+            },
+            plugins: {
+                scene: [{
+                    key: 'SpinePlugin',
+                    plugin: spine.SpinePlugin,
+                    mapping: 'spine'
+                }]
             }
         };
 

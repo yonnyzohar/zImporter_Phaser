@@ -2,37 +2,39 @@ import Phaser from "phaser";
 import { SpineData } from "./SceneData";
 type SpineCallback = (spineObj: Phaser.GameObjects.GameObject | undefined) => void;
 /**
- * ZSpine — Phaser equivalent of the PIXI ZSpine loader.
+ * ZSpine — loads a Spine 4.x skeleton using the @esotericsoftware/spine-phaser plugin.
  *
- * Phaser does not include native Spine support in the core package.
- * This class will use the `SpinePlugin` (phaser3-rex-plugins / phaser-spine
- * official plugin) if it is registered on the scene, otherwise it logs a
- * warning and calls back with `undefined`.
+ * Supports both:
+ *  - Standard path: spineJson + spineAtlas file via plugin loader
+ *  - No-atlas path: spineJson + individual pngFiles
+ *    PNGs are loaded as Phaser textures, then a TextureAtlas is built manually
+ *    (mirroring the PIXI version) and injected into the plugin's atlasCache.
  *
- * The same JSON data format (spineJson + spineAtlas, or spineJson + pngFiles)
- * is supported as in the PIXI version.
- *
- * Usage in ZScene is automatic — just include a `"spine"` node in your
- * placements JSON and it will be picked up.
- *
- * To enable Spine:
- *   1. Install the appropriate Spine plugin for Phaser 3.
- *   2. Register it in your Phaser game config under `plugins`.
- *   3. Ensure spine JSON + atlas files are accessible at the paths specified
- *      in the placement JSON.
+ * Register SpinePlugin in your Phaser game config:
+ *   plugins: { scene: [{ key: "SpinePlugin", plugin: SpinePlugin, mapping: "spine" }] }
  */
 export declare class ZSpine {
     private phaserScene;
     private spineData;
     private assetBasePath;
     constructor(scene: Phaser.Scene, spineData: SpineData, assetBasePath: string);
-    /**
-     * Asynchronously loads and creates a Spine game object.
-     * Calls `callback` with the created object, or `undefined` if Spine is
-     * not available.
-     */
     load(callback: SpineCallback): Promise<void>;
-    private getBaseName;
+    /**
+     * Builds a TextureAtlas directly from already-loaded Phaser textures,
+     * wires GLTexture (WebGL) or CanvasTexture wrappers, and injects into
+     * the SpinePlugin's atlasCache. getAtlas() checks atlasCache first —
+     * it returns the pre-built atlas directly without parsing any text file.
+     */
+    private buildAndInjectAtlas;
+    /** Load all PNG files into Phaser's texture cache. */
+    private loadImages;
+    /** Load a JSON file into Phaser's json cache. */
+    private loadJsonFile;
+    /** Wrapper for a single plugin file loader call (spineJson / spineAtlas). */
+    private loadPluginFile;
+    private texKey;
+    private fileName;
+    private baseName;
 }
 export {};
 //# sourceMappingURL=ZSpine.d.ts.map
