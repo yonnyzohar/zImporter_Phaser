@@ -17,9 +17,6 @@
   "peerDependencies": {
     "phaser": "^3.60.0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
   "devDependencies": {
     "@types/eslint": "^9.6.1",
     "@types/gsap": "^3.0.0",
