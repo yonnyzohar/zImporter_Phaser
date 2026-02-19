@@ -1,13 +1,19 @@
 {
   "name": "zimporter-phaser",
   "version": "1.0.40",
-  "description": "",
+  "description": "A TypeScript library for importing and managing zStudio scenes in Phaser applications.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": "https://github.com/yonnyzohar/zImporter_Phaser",
+  "homepage": "https://zstudiosltd.com/",
   "scripts": {
     "build": "tsc",
-    "package": "tsc --emitDeclarationOnly && webpack --config webpack.config.js"
+    "package": "tsc --emitDeclarationOnly && webpack --config webpack.config.js",
+    "docs": "typedoc"
   },
+  "keywords": ["phaser", "phaser3", "zstudio", "animation", "ui", "typescript"],
+  "author": "Yonathan Zohar",
+  "license": "MIT",
   "peerDependencies": {
     "phaser": "^3.60.0"
   },
@@ -35,11 +41,5 @@
   },
   "files": [
     "dist/**/*"
-  ],
-  "ignore": [
-    "node_modules",
-    "logs",
-    "*.log",
-    ".vscode"
   ]
 }

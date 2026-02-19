@@ -1,25 +1,27 @@
 # zImporter
 
-The `zImporter` is a TypeScript package designed to import and manage graphical hierarchies created in **zStudio**. This package allows seamless integration of assets and scenes built in **zStudio** into your JavaScript or TypeScript-based projects, particularly those using **PixiJS**.
+The `zImporter` is a TypeScript package designed to import and manage graphical hierarchies created in **zStudio**. This package allows seamless integration of assets and scenes built in **zStudio** into your JavaScript or TypeScript-based projects, particularly those using **Phaser**.
 
 ## Features
 
 * Import and manage scenes and graphical hierarchies from **zStudio**
-* Works with **PixiJS** to display and interact with imported assets
-* Provides a flexible and easy-to-use API for handling assets and scenes
+* Works with **Phaser** to display and interact with imported assets
+* Provides a flexible and easy-to-use API for handling assets and scenes.
+
+* Download zStudios to get started: https://zstudiosltd.com/
 
 ## Installation
 
 To install the `zImporter` package from the npm registry:
 
 ```bash
-npm install zimporter-pixi@1.0.10
+npm install zimporter-phaser@1.0.40
 ```
 
 Or to always get the latest version:
 
 ```bash
-npm install zimporter-pixi@latest
+npm install zimporter-phaser@latest
 ```
 
 > **Note:** Your `tsconfig.json` should include:
@@ -27,6 +29,61 @@ npm install zimporter-pixi@latest
 ```json
 "module": "ESNext",
 "moduleResolution": "bundler"
+```
+
+## HTML Setup
+
+To use zImporter in a browser environment, include the following scripts in your HTML file:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>zImporter Phaser Example</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.js"></script>
+    <!-- Load your compiled zImporter bundle -->
+    <script src="./dist/zimporter-phaser.min.js"></script>
+    <!-- Spine plugin for Phaser -->
+    <script src="./node_modules/@esotericsoftware/spine-phaser/dist/iife/spine-phaser.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    <script>
+        // Your Phaser game code here
+    </script>
+</body>
+</html>
+```
+
+Make sure to configure the Spine plugin in your Phaser game config:
+
+```javascript
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    parent: 'game-container',
+    scene: GameScene,
+    backgroundColor: 0x000000,
+    plugins: {
+        scene: [{
+            key: 'SpinePlugin',
+            plugin: spine.SpinePlugin,
+            mapping: 'spine'
+        }]
+    }
+};
 ```
 
 ## Building
@@ -37,95 +94,97 @@ npm run package
 ### Importing zImporter into Your Project
 
 You can find an example project here:
-[https://github.com/yonnyzohar/zImporter\_PIXI\_Example](https://github.com/yonnyzohar/zImporter_PIXI_Example)
+[https://github.com/yonnyzohar/zImporter\_Phaser\_Example](https://github.com/yonnyzohar/zImporter_Phaser_Example)
 
 Basic import:
 
 ```ts
-import { ZTimeline } from 'zimporter-pixi';
+import { ZTimeline } from 'zimporter-phaser';
 ```
 
-### Example: Creating a New PixiJS Application
+### Example: Creating a New Phaser Game
 
 ```ts
-import * as PIXI from 'pixi.js';
-import { Game } from './Game';
-import { ZSceneStack, ZUpdatables } from 'zimporter-pixi';
+import Phaser from 'phaser';
+import * as spine from '@esotericsoftware/spine-phaser';
+import { ZSceneStack, ZUpdatables } from 'zimporter-phaser';
 
-const app = new PIXI.Application({
-  backgroundColor: 0x000000,
-  resolution: window.devicePixelRatio || 1,
-  autoDensity: true,
-  antialias: true,
-});
-
-function resizeCanvas() {
-  app.renderer.resize(window.innerWidth, window.innerHeight);
-  ZSceneStack.resize(window.innerWidth, window.innerHeight);
-}
-
-window.addEventListener('resize', resizeCanvas);
-
-const game = new Game(app.stage, resizeCanvas);
-document.body.appendChild(app.view as any);
-ZUpdatables.init(24);
-
-let lastTime = performance.now();
-let frameCount = 0;
-
-app.ticker.add(() => {
-  frameCount++;
-  const now = performance.now();
-  const delta = now - lastTime;
-
-  if (delta >= 1000) {
-    frameCount = 0;
-    lastTime = now;
+class GameScene extends Phaser.Scene {
+  preload() {
+    // Load your assets here
   }
 
-  const deltaMS = PIXI.Ticker.shared.deltaMS / 1000;
-  game.update(deltaMS);
-  ZUpdatables.update();
-});
+  create() {
+    ZSceneStack.init(this);
+    ZUpdatables.init(24);
+    // Your game initialization code
+  }
+
+  update(time: number, delta: number) {
+    ZUpdatables.update();
+  }
+}
+
+const config: Phaser.Types.Core.GameConfig = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  scene: GameScene,
+  backgroundColor: 0x000000,
+  plugins: {
+    scene: [{
+      key: 'SpinePlugin',
+      plugin: spine.SpinePlugin,
+      mapping: 'spine'
+    }]
+  }
+};
+
+const game = new Phaser.Game(config);
 ```
 
-> This sets up a Pixi renderer and integrates zImporter’s update system.
+> This sets up a Phaser game and integrates zImporter's update system.
 
 ### Example: Loading and Displaying a Scene from zStudio
 
 ```ts
-import * as PIXI from 'pixi.js';
-import { ZScene, ZSceneStack, ZTimeline } from 'zimporter-pixi';
+import Phaser from 'phaser';
+import { ZScene, ZSceneStack, ZTimeline } from 'zimporter-phaser';
 
-let scene = new ZScene();
-scene.load('./assets/robo/', () => {
-  ZSceneStack.push(scene);
-  const mc = ZSceneStack.spawn('RobotWalker') as ZTimeline;
-  mc.play();
-  stage.addChild(mc);
-  mc.x = 100;
-  mc.y = 200;
-});
+class GameScene extends Phaser.Scene {
+  create() {
+    const scene = new ZScene();
+    scene.load('./assets/robo/', () => {
+      ZSceneStack.push(scene);
+      const mc = ZSceneStack.spawn('RobotWalker') as ZTimeline;
+      mc.play();
+      this.add.existing(mc);
+      mc.x = 100;
+      mc.y = 200;
+    });
+  }
+}
 ```
 
 ### Example: Loading a Stage Created in zStudio
 
 ```ts
-import * as PIXI from 'pixi.js';
-import { ZScene, ZSceneStack } from 'zimporter-pixi';
+import Phaser from 'phaser';
+import { ZScene, ZSceneStack } from 'zimporter-phaser';
 
-constructor(stage: PIXI.Container) {
-  this.stage = stage;
-  const loadPath = (window as any).loadPath;
-  const scene = new ZScene('testScene');
-  scene.load(loadPath, () => {
-    ZSceneStack.push(scene);
-    scene.loadStage(this.stage);
-  });
+class GameScene extends Phaser.Scene {
+  create() {
+    const loadPath = (window as any).loadPath;
+    const scene = new ZScene('testScene');
+    scene.load(loadPath, () => {
+      ZSceneStack.push(scene);
+      scene.loadStage(this);
+    });
+  }
 }
 ```
 
-> Each `ZScene` has a stage associated with it. This preserves the position and orientation logic defined in **zStudio**. Always add the scene stage to the root container.
+> Each `ZScene` has a stage associated with it. This preserves the position and orientation logic defined in **zStudio**. Always add the scene stage to the scene.
 
 ## API
 
@@ -140,7 +199,7 @@ The package exposes several classes and methods for interacting with imported as
 ### `ZContainer`
 
 * Core class for all visual elements.
-* Extends `PIXI.Container` and adds:
+* Extends `Phaser.GameObjects.Container` and adds:
 
   * Anchoring support
   * Orientation data from zStudio
@@ -149,7 +208,7 @@ The package exposes several classes and methods for interacting with imported as
 #### `Working with Text`
   In ZStudio, texts are always wrapper in a container, and are called "label" by default.
   If you know a specific container holds a text fields, you can acces it via:
-  `getTextField():PIXI.Text | null`
+  `getTextField():Phaser.GameObjects.Text | null`
   You can also set a string on the text via the container using:
   `setText(text:string):void`
 
