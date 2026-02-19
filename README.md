@@ -33,7 +33,7 @@ npm install zimporter-phaser@latest
 
 ## HTML Setup
 
-To use zImporter in a browser environment, include the following scripts in your HTML file:
+To use zImporter in a browser (without a bundler), include the following scripts in your HTML file:
 
 ```html
 <!DOCTYPE html>
@@ -47,43 +47,85 @@ To use zImporter in a browser environment, include the following scripts in your
     <!-- Spine plugin for Phaser -->
     <script src="./node_modules/@esotericsoftware/spine-phaser/dist/iife/spine-phaser.js"></script>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-        }
-        #game-container {
-            width: 100vw;
-            height: 100vh;
-        }
+        body { margin: 0; overflow: hidden; }
+        #game-container { width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
     <div id="game-container"></div>
     <script>
-        // Your Phaser game code here
+        // All zImporter classes are available under the `zimporter` global namespace:
+        // zimporter.ZScene, zimporter.ZTimeline, zimporter.ZUpdatables, etc.
+
+        const sceneJsonPath = './assets/myScene/';
+
+        class MyPhaserScene extends Phaser.Scene {
+            create() {
+                zimporter.ZUpdatables.init(24);
+                this._frameCount = 0;
+                this._lastTime = performance.now();
+                this._fpsText = this.add.text(10, 10, 'FPS: --', {
+                    fontSize: '16px', fill: '#ffffff'
+                }).setDepth(9999);
+
+                this.zScene = new zimporter.ZScene('testScene', this);
+                this.zScene.load(sceneJsonPath, () => {
+                    this.zScene.loadStage(this);
+
+                    const stage = this.zScene.sceneStage;
+                    for (const child of stage.list) {
+                        if (child instanceof zimporter.ZTimeline) {
+                            child.play();
+                        }
+                    }
+                });
+            }
+
+            update(time, delta) {
+                this._frameCount++;
+                const now = performance.now();
+                const elapsed = now - this._lastTime;
+                if (elapsed >= 1000) {
+                    const fps = (this._frameCount / elapsed) * 1000;
+                    this._fpsText.setText(`FPS: ${fps.toFixed(1)}`);
+                    this._frameCount = 0;
+                    this._lastTime = now;
+                }
+                zimporter.ZUpdatables.update();
+            }
+        }
+
+        const config = {
+            type: Phaser.AUTO,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            parent: 'game-container',
+            scene: [MyPhaserScene],
+            backgroundColor: '#000000',
+            scale: {
+                mode: Phaser.Scale.RESIZE,
+                autoCenter: Phaser.Scale.CENTER_BOTH
+            },
+            plugins: {
+                scene: [{
+                    key: 'SpinePlugin',
+                    plugin: spine.SpinePlugin,
+                    mapping: 'spine'
+                }]
+            }
+        };
+
+        const game = new Phaser.Game(config);
+
+        window.addEventListener('resize', () => {
+            const scene = game.scene.scenes[0];
+            if (scene && scene.zScene) {
+                scene.zScene.resize(window.innerWidth, window.innerHeight);
+            }
+        });
     </script>
 </body>
 </html>
-```
-
-Make sure to configure the Spine plugin in your Phaser game config:
-
-```javascript
-const config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    parent: 'game-container',
-    scene: GameScene,
-    backgroundColor: 0x000000,
-    plugins: {
-        scene: [{
-            key: 'SpinePlugin',
-            plugin: spine.SpinePlugin,
-            mapping: 'spine'
-        }]
-    }
-};
 ```
 
 ## Building
@@ -107,30 +149,73 @@ import { ZTimeline } from 'zimporter-phaser';
 ```ts
 import Phaser from 'phaser';
 import * as spine from '@esotericsoftware/spine-phaser';
-import { ZSceneStack, ZUpdatables } from 'zimporter-phaser';
+import { ZScene, ZTimeline, ZUpdatables } from 'zimporter-phaser';
+
+const sceneJsonPath = './assets/myScene/';
 
 class GameScene extends Phaser.Scene {
+  private zScene!: ZScene;
+  private _frameCount = 0;
+  private _lastTime = 0;
+  private _fpsText!: Phaser.GameObjects.Text;
+
   preload() {
-    // Load your assets here
+    // Optionally preload assets here
   }
 
   create() {
-    ZSceneStack.init(this);
     ZUpdatables.init(24);
-    // Your game initialization code
+
+    // Optional FPS display
+    this._lastTime = performance.now();
+    this._fpsText = this.add.text(10, 10, 'FPS: --', {
+      fontSize: '16px',
+      color: '#ffffff'
+    }).setDepth(9999);
+
+    // Load the zStudio scene
+    this.zScene = new ZScene('testScene', this);
+    this.zScene.load(sceneJsonPath, () => {
+      this.zScene.loadStage(this);
+
+      // Play any top-level timelines
+      const stage = this.zScene.sceneStage;
+      for (const child of stage.list) {
+        if (child instanceof ZTimeline) {
+          child.play();
+        }
+      }
+    });
   }
 
   update(time: number, delta: number) {
+    // FPS counter
+    this._frameCount++;
+    const now = performance.now();
+    const elapsed = now - this._lastTime;
+    if (elapsed >= 1000) {
+      const fps = (this._frameCount / elapsed) * 1000;
+      this._fpsText.setText(`FPS: ${fps.toFixed(1)}`);
+      this._frameCount = 0;
+      this._lastTime = now;
+    }
+
+    // delta is in ms — advance all registered updatables (timelines, etc.)
     ZUpdatables.update();
   }
 }
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
-  scene: GameScene,
-  backgroundColor: 0x000000,
+  width: window.innerWidth,
+  height: window.innerHeight,
+  parent: 'game-container',
+  backgroundColor: '#000000',
+  scene: [GameScene],
+  scale: {
+    mode: Phaser.Scale.RESIZE,
+    autoCenter: Phaser.Scale.CENTER_BOTH
+  },
   plugins: {
     scene: [{
       key: 'SpinePlugin',
@@ -141,50 +226,34 @@ const config: Phaser.Types.Core.GameConfig = {
 };
 
 const game = new Phaser.Game(config);
+
+// Handle window resize
+window.addEventListener('resize', () => {
+  const scene = game.scene.scenes[0] as any;
+  if (scene?.zScene) {
+    scene.zScene.resize(window.innerWidth, window.innerHeight);
+  }
+});
 ```
 
 > This sets up a Phaser game and integrates zImporter's update system.
 
-### Example: Loading and Displaying a Scene from zStudio
-
-```ts
-import Phaser from 'phaser';
-import { ZScene, ZSceneStack, ZTimeline } from 'zimporter-phaser';
-
-class GameScene extends Phaser.Scene {
-  create() {
-    const scene = new ZScene();
-    scene.load('./assets/robo/', () => {
-      ZSceneStack.push(scene);
-      const mc = ZSceneStack.spawn('RobotWalker') as ZTimeline;
-      mc.play();
-      this.add.existing(mc);
-      mc.x = 100;
-      mc.y = 200;
-    });
-  }
-}
-```
-
 ### Example: Loading a Stage Created in zStudio
 
 ```ts
-import Phaser from 'phaser';
-import { ZScene, ZSceneStack } from 'zimporter-phaser';
+// Inside your Phaser Scene's create():
+const scene = new ZScene('testScene', this);
+scene.load('./assets/myScene/', () => {
+  scene.loadStage(this);
 
-class GameScene extends Phaser.Scene {
-  create() {
-    const loadPath = (window as any).loadPath;
-    const scene = new ZScene('testScene');
-    scene.load(loadPath, () => {
-      ZSceneStack.push(scene);
-      scene.loadStage(this);
-    });
+  // Access spawned objects by name
+  const stage = scene.sceneStage;
+  const btn = stage.get('myButton') as ZButton;
+  if (btn) {
+    btn.setCallback(() => console.log('clicked'));
   }
-}
+});
 ```
-
-> Each `ZScene` has a stage associated with it. This preserves the position and orientation logic defined in **zStudio**. Always add the scene stage to the scene.
 
 ## API
 
