@@ -613,7 +613,18 @@ export class ZScene {
         }
         if (!asset) { console.error("Failed to create sprite for:", frameKey); continue; }
         asset.setDisplaySize(spriteNode.width, spriteNode.height);
-        asset.setOrigin(0, 0);
+        // Convert PIXI-style pivotX/Y (pixel offset from top-left) to Phaser origin fraction.
+        // In PIXI: img.pivot.set(pivotX, pivotY) with anchor defaulting to (0,0).
+        // In Phaser: setOrigin(pivotX/width, pivotY/height) achieves the same visual result.
+        const spritePivotX = spriteNode.pivotX ?? 0;
+        const spritePivotY = spriteNode.pivotY ?? 0;
+        const originX = spriteNode.width > 0 ? spritePivotX / spriteNode.width : 0;
+        const originY = spriteNode.height > 0 ? spritePivotY / spriteNode.height : 0;
+        asset.setOrigin(originX, originY);
+        // Store currentTransform so parent ZContainer.setOrigin() can correctly
+        // apply parent-pivot offset to this sprite's position (without it, setOrigin
+        // falls to the else-branch and discards spriteNode.x/y entirely).
+        (asset as any).currentTransform = { x: spriteNode.x ?? 0, y: spriteNode.y ?? 0 };
         mc.add(asset);
         (mc as any)[spriteNode.name] = asset;
         this.applyFilters(childNode, asset);
@@ -722,6 +733,11 @@ export class ZScene {
       const childTemplate = this.data.templates[childNode.name];
       if (childTemplate?.children) {
         this.createAsset(asset || mc, childTemplate);
+        // Re-run applyTransform on `asset` now that its children exist.
+        // setInstanceData ran applyTransform when the list was empty → setOrigin
+        // was a no-op. Now all children are present, so setOrigin correctly shifts
+        // them by asset's pivotX/Y (e.g. instance_xr5g: pivotX=477, pivotY=106).
+        asset?.applyTransform?.();
       }
 
       asset?.init?.();

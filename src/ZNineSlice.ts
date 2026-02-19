@@ -69,16 +69,19 @@ export class ZNineSlice extends Phaser.GameObjects.NineSlice {
 
         this.setSize(w, h);
 
-        // Position & scale — mirror ZContainer.applyTransform():
-        // parent pivot is already absorbed into the parent container's own x/y,
-        // so we only need to subtract our own pivot × own scale here.
+        // Position — mirror ZContainer.applyTransform(): subtract parent container's
+        // pivotX/Y (if it has one) so that when the parent's setOrigin() and this
+        // applyTransform() both run during resize, they agree on the same position.
         const scaleX = this.currentTransform.scaleX || 1;
         const scaleY = this.currentTransform.scaleY || 1;
         const ownPivotX = this.currentTransform.pivotX || 0;
         const ownPivotY = this.currentTransform.pivotY || 0;
+        const parentContainer = this.parentContainer as any;
+        const parentPivotX = (parentContainer?.currentTransform?.pivotX) || 0;
+        const parentPivotY = (parentContainer?.currentTransform?.pivotY) || 0;
         this.setPosition(
-            (this.currentTransform.x || 0) - scaleX * ownPivotX,
-            (this.currentTransform.y || 0) - scaleY * ownPivotY
+            (this.currentTransform.x || 0) - scaleX * ownPivotX - parentPivotX,
+            (this.currentTransform.y || 0) - scaleY * ownPivotY - parentPivotY
         );
 
         // Scale, rotation, alpha, visibility
