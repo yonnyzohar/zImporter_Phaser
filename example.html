@@ -29,7 +29,7 @@
         // Example JSON path (adjust as needed)
         //
 
-        let sceneJsonPath = "./assets/robot/";
+        let sceneJsonPath = "./assets/egyptExport/";
 
         // Define a Phaser scene that will use ZScene
         class MyPhaserScene extends Phaser.Scene {
@@ -67,7 +67,6 @@
             update(time, delta) {
                 // FPS counter
                 this._frameCount++;
-                console.log('update called', delta);
                 const now = performance.now();
                 const elapsed = now - this._lastTime;
                 if (elapsed >= 1000) {

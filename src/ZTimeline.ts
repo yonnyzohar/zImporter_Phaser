@@ -124,48 +124,51 @@ export class ZTimeline extends ZContainer {
     gotoAndStop(frameNum: number): void {
         this.currentFrame = frameNum;
         if (this._frames != null) {
+            // This timeline's own pivot is used to offset child positions,
+            // mirroring how PIXI's native pivot works (child.x is in pivot-space of parent).
+            const myPivotX = (this.currentTransform?.pivotX) || 0;
+            const myPivotY = (this.currentTransform?.pivotY) || 0;
+
             for (const k in this._frames) {
                 if (this._frames[k][this.currentFrame]) {
                     const frame = this._frames[k][this.currentFrame];
+                    const child = this[k];
 
-                    if (this[k]) {
-                        const child = this[k];
-                        // pivotX / pivotY — in Phaser these are handled differently per object type
-                        // For ZContainer children, pivot is handled via setOrigin of children
-                        // For Sprites/Images, we can adjust origin
-                        if (frame.pivotX != undefined && frame.pivotY != undefined) {
-                            if (typeof child.setOrigin === 'function' && typeof child.width === 'number' && child.width > 0) {
-                                child.setOrigin(frame.pivotX / child.width, frame.pivotY / child.height);
-                            } else if (child.currentTransform) {
-                                child.currentTransform.pivotX = frame.pivotX;
-                                child.currentTransform.pivotY = frame.pivotY;
-                            }
+                    if (child) {
+                        // Update the child's own pivot on its currentTransform first,
+                        // so setOrigin() (which reads currentTransform.pivotX/Y) is correct.
+                        if (frame.pivotX !== undefined && child.currentTransform) {
+                            child.currentTransform.pivotX = frame.pivotX;
                         }
-                        if (frame.scaleX != undefined) {
-                            if (child.setScale) {
-                                child.setScale(frame.scaleX, frame.scaleY != undefined ? frame.scaleY : child.scaleY);
-                            } else {
-                                child.scaleX = frame.scaleX;
-                            }
+                        if (frame.pivotY !== undefined && child.currentTransform) {
+                            child.currentTransform.pivotY = frame.pivotY;
                         }
-                        if (frame.scaleY != undefined && frame.scaleX == undefined) {
-                            if (child.setScale) {
-                                child.setScale(child.scaleX, frame.scaleY);
-                            } else {
-                                child.scaleY = frame.scaleY;
-                            }
+                        if (frame.scaleX !== undefined) {
+                            child.scaleX = frame.scaleX;
                         }
-                        if (frame.x != undefined) {
-                            child.x = frame.x;
+                        if (frame.scaleY !== undefined) {
+                            child.scaleY = frame.scaleY;
                         }
-                        if (frame.y != undefined) {
-                            child.y = frame.y;
+                        // frame.x/y are in the parent's pivot-space (same as PIXI data).
+                        // Phaser simulates pivot by offsetting children, so subtract this
+                        // timeline's pivot to get the Phaser container's actual local position.
+                        if (frame.x !== undefined) {
+                            child.x = frame.x - myPivotX;
                         }
-                        if (frame.alpha != undefined) {
+                        if (frame.y !== undefined) {
+                            child.y = frame.y - myPivotY;
+                        }
+                        if (frame.alpha !== undefined) {
                             child.alpha = frame.alpha;
                         }
-                        if (frame.rotation != undefined) {
+                        if (frame.rotation !== undefined) {
                             child.rotation = frame.rotation;
+                        }
+                        // Re-apply pivot simulation for ZContainer children so their
+                        // own children are repositioned when pivot changes.
+                        if ((frame.pivotX !== undefined || frame.pivotY !== undefined) &&
+                            typeof child.setOrigin === 'function' && child.currentTransform) {
+                            child.setOrigin();
                         }
                     }
                 }
