@@ -468,15 +468,14 @@ export class ZScene {
       if (type === "bitmapFontLocked") {
         const textNode = childNode as BitmapFontLocked;
         if (textNode.fontName && this.phaserScene.cache.bitmapFont.exists(textNode.fontName)) {
-          const tf = this.phaserScene.add.bitmapText(
-            textNode.x ?? 0,
-            textNode.y ?? 0,
-            textNode.fontName,
-            textNode.text || "",
-          );
+          const posX = (textNode.x ?? 0) - (textNode.pivotX ?? 0);
+          const posY = (textNode.y ?? 0) - (textNode.pivotY ?? 0);
+          const tf = this.phaserScene.add.bitmapText(posX, posY, textNode.fontName, textNode.text || "");
           if (textNode.textAnchorX !== undefined && textNode.textAnchorY !== undefined) {
             tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
           }
+          // Store currentTransform so parent setOrigin() can pivot-adjust this text correctly.
+          (tf as any).currentTransform = { x: posX, y: posY };
           tf.setName(textNode.name);
           (mc as any)[textNode.name] = tf;
           mc.add(tf);
@@ -488,59 +487,87 @@ export class ZScene {
       // textField / bitmapText
       if (type === "textField" || type === "bmpTextField" || type === "bitmapText") {
         const textNode = childNode as TextData;
+        // pivotX/Y on text nodes is PIXI's tf.pivot — there is no native pivot on Phaser
+        // Text objects, so we absorb it into the stored position (same net visual result).
+        const posX = (textNode.x ?? 0) - (textNode.pivotX ?? 0);
+        const posY = (textNode.y ?? 0) - (textNode.pivotY ?? 0);
 
         const fontKey = textNode.uniqueFontName || textNode.fontName;
         const hasBitmap = fontKey && this.phaserScene.cache.bitmapFont.exists(fontKey as string);
         if (hasBitmap) {
           const tf = this.phaserScene.add.bitmapText(
-            textNode.x,
-            textNode.y,
+            posX, posY,
             fontKey as string,
             textNode.text || "",
             (textNode.size as number) || undefined
           );
           if (typeof textNode.letterSpacing === "number") {
-            (tf as Phaser.GameObjects.BitmapText).setLetterSpacing(textNode.letterSpacing);
+            tf.setLetterSpacing(textNode.letterSpacing);
           }
           if (textNode.textAnchorX !== undefined && textNode.textAnchorY !== undefined) {
             tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
           }
+          if (textNode.rotation) tf.rotation = textNode.rotation;
+          if (textNode.alpha !== undefined) tf.alpha = textNode.alpha;
+          // Store currentTransform so parent setOrigin() can pivot-adjust this text correctly.
+          (tf as any).currentTransform = { x: posX, y: posY };
           tf.setName(textNode.name);
           mc.add(tf);
           (mc as any)[textNode.name] = tf;
           this.applyFilters(childNode, tf);
         } else {
+          // --- Resolve fill color / gradient ---
           let colorStr = "#ffffff";
-          if (textNode.color) {
+          const gd = textNode.gradientData;
+          if (textNode.fillType === "gradient" && gd?.colors && gd.colors.length >= 2) {
+            // Phaser Text has no native gradient — use first color and warn.
+            const c0 = gd.colors[0];
+            colorStr = typeof c0 === "number" ? "#" + c0.toString(16).padStart(6, "0") : (c0 as string);
+            console.warn(`ZScene: gradient fill on text "${textNode.name}" — using first color only (Phaser Text has no native gradient)`);
+          } else if (textNode.color !== undefined && textNode.color !== null) {
             if (typeof textNode.color === "number") {
               colorStr = "#" + textNode.color.toString(16).padStart(6, "0");
             } else {
               colorStr = textNode.color as string;
             }
           }
+
           const style: Phaser.Types.GameObjects.Text.TextStyle = {
             fontFamily: (textNode.fontName as string | undefined) || "Arial",
-            fontSize: typeof textNode.size === "number" ? `${textNode.size}px` : textNode.size,
+            fontSize: typeof textNode.size === "number" ? `${textNode.size}px` : (textNode.size as string | undefined),
             color: colorStr,
-            align: textNode.align || "left",
+            align: (textNode.align || "left") as Phaser.Types.GameObjects.Text.TextStyle["align"],
           };
           if (typeof textNode.fontWeight === "string") {
             style.fontStyle = textNode.fontWeight;
           }
-          if (textNode.wordWrap && typeof textNode.wordWrapWidth === "number") {
-            style.wordWrap = { width: textNode.wordWrapWidth, useAdvancedWrap: true };
+          if (textNode.wordWrap) {
+            style.wordWrap = {
+              width: textNode.wordWrapWidth ?? 0,
+              useAdvancedWrap: true,
+            };
           }
-          const tf = this.phaserScene.add.text(
-            textNode.x ?? 0,
-            textNode.y ?? 0,
-            (textNode.text ?? "") + "",
-            style
-          );
-          if (typeof textNode.stroke === "string" && typeof textNode.strokeThickness === "number") {
-            tf.setStroke(textNode.stroke, textNode.strokeThickness);
+          if (textNode.breakWords) {
+            // Phaser uses wordWrap.width with breakWords flag or maxLines — simulate via wrap
+            if (!style.wordWrap) style.wordWrap = { width: textNode.wordWrapWidth ?? 500, useAdvancedWrap: false };
+          }
+          if (typeof textNode.stroke === "string" || typeof textNode.stroke === "number") {
+            const strokeColor = typeof textNode.stroke === "number"
+              ? "#" + textNode.stroke.toString(16).padStart(6, "0")
+              : textNode.stroke;
+            style.stroke = strokeColor;
+            style.strokeThickness = textNode.strokeThickness ?? 0;
           }
           if (typeof textNode.padding === "number") {
-            tf.setPadding(textNode.padding);
+            style.padding = { x: textNode.padding, y: textNode.padding };
+          } else if (Array.isArray(textNode.padding)) {
+            style.padding = { left: textNode.padding[0], top: textNode.padding[1] ?? textNode.padding[0] };
+          }
+
+          const tf = this.phaserScene.add.text(posX, posY, (textNode.text ?? "") + "", style);
+
+          if (typeof textNode.letterSpacing === "number") {
+            tf.setLetterSpacing(textNode.letterSpacing);
           }
           if (typeof textNode.leading === "number") {
             tf.setLineSpacing(textNode.leading);
@@ -556,6 +583,10 @@ export class ZScene {
           if (textNode.textAnchorX !== undefined && textNode.textAnchorY !== undefined) {
             tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
           }
+          if (textNode.rotation) tf.rotation = textNode.rotation;
+          if (textNode.alpha !== undefined) tf.alpha = textNode.alpha;
+          // Store currentTransform so parent setOrigin() can pivot-adjust this text correctly.
+          (tf as any).currentTransform = { x: posX, y: posY };
           tf.setName(textNode.name);
           (mc as any)[textNode.name] = tf;
           mc.add(tf);
