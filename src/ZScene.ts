@@ -209,12 +209,6 @@ export class ZScene {
     const w = this.phaserScene.scale.width || window.innerWidth;
     const h = this.phaserScene.scale.height || window.innerHeight;
     this.resize(w, h);
-    this.resize(w, h);
-    setTimeout(() => {
-      const w2 = this.phaserScene.scale.width || window.innerWidth;
-      const h2 = this.phaserScene.scale.height || window.innerHeight;
-      this.resize(w2, h2);
-    }, 200);
   }
 
   /**
@@ -681,10 +675,13 @@ export class ZScene {
             spineObj.setName(spineData.name || childNode.name);
             mc.add(spineObj);
             (mc as any)[childNode.name] = spineObj;
-            // Re-apply the container's transform so the spine object gets the
-            // correct pivot offset (setOrigin runs on mc.list, which was empty
-            // when setInstanceData first ran before this async callback fired).
-            mc.applyTransform();
+            // Trigger a full resize so the spine (not in resizeMap itself) gets
+            // correctly positioned by its parent container's setOrigin() call.
+            // mc.applyTransform() alone is insufficient — it doesn't re-run the
+            // full stage-scale + parent-hierarchy transform chain that resize() does.
+            const w = this.phaserScene.scale.width || window.innerWidth;
+            const h = this.phaserScene.scale.height || window.innerHeight;
+            this.resize(w, h);
           }
         });
         continue;
