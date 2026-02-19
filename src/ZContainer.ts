@@ -279,9 +279,6 @@ export class ZContainer extends Phaser.GameObjects.Container {
         const screenWidth = this.scene.scale.width;
         const screenHeight = this.scene.scale.height;
 
-        // Reset scale so measurements are at natural size
-        this.setScale(1, 1);
-
         // Helper: convert a world-space point to parent-local coords
         const parentMat = this.parentContainer
             ? this.parentContainer.getWorldTransformMatrix()
@@ -298,57 +295,58 @@ export class ZContainer extends Phaser.GameObjects.Container {
         const localScreenW = btmRight.x - topLeft.x;
         const localScreenH = btmRight.y - topLeft.y;
 
-        // Position container at top-left of screen
-        this.x = topLeft.x;
-        this.y = topLeft.y;
-
         const firstChild = this.list[0] as any;
         const isNineSlice = firstChild instanceof Phaser.GameObjects.NineSlice;
 
         if (isNineSlice) {
+            this.x = topLeft.x;
+            this.y = topLeft.y;
+            this.setScale(1, 1);
             firstChild.width = localScreenW;
             firstChild.height = localScreenH;
             return;
         }
 
-        // Get natural content bounds in world space at scale=1
-        const naturalBounds = this.getBounds();
-        if (naturalBounds.width === 0 || naturalBounds.height === 0) return;
-
-        // Natural content size in parent-local units
-        const pScaleX = parentMat ? this._getParentWorldScaleX() : 1;
-        const pScaleY = parentMat ? this._getParentWorldScaleY() : 1;
-        const localContentW = naturalBounds.width / pScaleX;
-        const localContentH = naturalBounds.height / pScaleY;
-
-        let scale: number;
-        if (screenWidth > screenHeight) {
-            // Landscape: scale to fill width
-            scale = localScreenW / localContentW;
-        } else {
-            // Portrait: scale to fill height
-            scale = localScreenH / localContentH;
+        // Compute content bounds directly from children's local properties,
+        // avoiding getBounds() which requires up-to-date world transforms.
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const child of this.list) {
+            const c = child as any;
+            const dw: number = c.displayWidth ?? c.width ?? 0;
+            const dh: number = c.displayHeight ?? c.height ?? 0;
+            if (dw === 0 && dh === 0) continue;
+            const ox: number = (c.originX ?? 0) * dw;
+            const oy: number = (c.originY ?? 0) * dh;
+            const cx: number = (c.x ?? 0) - ox;
+            const cy: number = (c.y ?? 0) - oy;
+            minX = Math.min(minX, cx);
+            minY = Math.min(minY, cy);
+            maxX = Math.max(maxX, cx + dw);
+            maxY = Math.max(maxY, cy + dh);
         }
+
+        if (!isFinite(minX) || !isFinite(minY)) return;
+
+        const localContentW = maxX - minX;
+        const localContentH = maxY - minY;
+        if (localContentW === 0 || localContentH === 0) return;
+
+        // Scale to cover the screen (use max to cover, min to fit)
+        const scaleX = localScreenW / localContentW;
+        const scaleY = localScreenH / localContentH;
+        const scale = Math.max(scaleX, scaleY);
+
         this.setScale(scale, scale);
 
-        // Center around screen midpoint
-        const displayedW = localContentW * scale;
-        const displayedH = localContentH * scale;
-        this.x = mid.x - displayedW / 2;
-        this.y = mid.y - displayedH / 2;
+        // Center the content around the screen midpoint in parent-local space.
+        // The content's local top-left is at (minX, minY); after scale it offset
+        // from the container origin by (minX*scale, minY*scale).
+        // We want content center to land on mid:
+        //   this.x + (minX + localContentW/2) * scale = mid.x
+        this.x = mid.x - (minX + localContentW / 2) * scale;
+        this.y = mid.y - (minY + localContentH / 2) * scale;
     }
 
-    private _getParentWorldScaleX(): number {
-        if (!this.parentContainer) return 1;
-        const mat = this.parentContainer.getWorldTransformMatrix();
-        return Math.sqrt(mat.a * mat.a + mat.b * mat.b);
-    }
-
-    private _getParentWorldScaleY(): number {
-        if (!this.parentContainer) return 1;
-        const mat = this.parentContainer.getWorldTransformMatrix();
-        return Math.sqrt(mat.c * mat.c + mat.d * mat.d);
-    }
     /**/
     public setX(value?: number | undefined): this {
 

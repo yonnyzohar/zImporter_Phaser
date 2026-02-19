@@ -29,7 +29,7 @@
         // Example JSON path (adjust as needed)
         //
 
-        let sceneJsonPath = "./assets/wildWest/";
+        let sceneJsonPath = "./assets/robot/";
 
         // Define a Phaser scene that will use ZScene
         class MyPhaserScene extends Phaser.Scene {
@@ -38,6 +38,15 @@
                 // Optionally preload assets here
             }
             create() {
+                zimporter.ZUpdatables.init(60);
+                // FPS tracking
+                this._frameCount = 0;
+                this._lastTime = performance.now();
+                this._fpsText = this.add.text(10, 10, 'FPS: --', {
+                    fontSize: '16px',
+                    fill: '#ffffff'
+                }).setDepth(9999);
+
                 // Instantiate ZScene and load the scene JSON
                 this.zScene = new zimporter.ZScene('testScene', this);
                 this.zScene.load(sceneJsonPath, () => {
@@ -45,18 +54,33 @@
                     this.zScene.loadStage(this);
 
                     let stage = this.zScene.sceneStage;
-                    if (stage) {
-                        let btn = stage.get("exampleSimpleBTN");
-                        if (btn) {
-                            btn.setCallback(() => {
-                                console.log("Button clicked!");
-                            });
-                            btn.setLongPressCallback(() => {
-                                console.log("Button long pressed!");
-                            });
+                    for (const child of stage.list) {
+                        if (child instanceof zimporter.ZTimeline) {
+                            child.play();
                         }
                     }
                 });
+            }
+
+
+
+            update(time, delta) {
+                // FPS counter
+                this._frameCount++;
+                console.log('update called', delta);
+                const now = performance.now();
+                const elapsed = now - this._lastTime;
+                if (elapsed >= 1000) {
+                    const fps = (this._frameCount / elapsed) * 1000;
+                    this._fpsText.setText(`FPS: ${fps.toFixed(1)}`);
+                    this._fpsText.setDepth(9999); // Keep on top
+                    this._frameCount = 0;
+                    this._lastTime = now;
+                }
+
+                // delta is already in ms, same as PIXI's ticker.deltaMS
+                const deltaMS = delta / 1000;
+                zimporter.ZUpdatables.update();
             }
         }
 

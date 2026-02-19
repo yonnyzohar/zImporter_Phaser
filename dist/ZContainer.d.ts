@@ -41,8 +41,6 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     setOrigin(): void;
     resize(width: number, height: number, orientation: "portrait" | "landscape"): void;
     executeFitToScreen(): void;
-    private _getParentWorldScaleX;
-    private _getParentWorldScaleY;
     setX(value?: number | undefined): this;
     setY(value?: number | undefined): this;
     setWidth(value: number): this;
