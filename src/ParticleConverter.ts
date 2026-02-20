@@ -23,7 +23,7 @@ export class ParticleConverter {
         // BUT: PIXI frequency might be per-particle, not per-wave
         if (pixiConfig.frequency !== undefined) {
             let frequency = pixiConfig.frequency * 1000; // Convert to milliseconds
-            
+
             // Check if we have spawnBurst behavior - this affects how frequency works
             const spawnBurstBehavior = pixiConfig.behaviors?.find((b: any) => b.type === 'spawnBurst');
             if (spawnBurstBehavior && spawnBurstBehavior.config.particlesPerWave > 1) {
@@ -35,7 +35,7 @@ export class ParticleConverter {
                 // Individual particle emission
                 frequency = pixiConfig.frequency * 1000;
             }
-            
+
             phaserConfig.frequency = frequency;
         } else {
             phaserConfig.frequency = 100;
@@ -192,7 +192,7 @@ export class ParticleConverter {
             // PIXI particlesPerWave might spawn all at once per frequency interval
             // But this could be too many - let's reduce it for visual match
             const particlesPerWave = config.particlesPerWave;
-            
+
             // Reduce quantity to match PIXI visual density better
             phaserConfig.quantity = Math.max(1, Math.floor(particlesPerWave / 4));
             console.log(`Adjusted quantity from ${particlesPerWave} to ${phaserConfig.quantity} for visual match`);
