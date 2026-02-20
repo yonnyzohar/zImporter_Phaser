@@ -21,6 +21,7 @@ export class ZContainer extends Phaser.GameObjects.Container {
     name: string = "";
     _fitToScreen: boolean = false;
     emitter?: Phaser.GameObjects.Particles.ParticleEmitter;
+    particleSystems: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
     originalTextWidth?: number;
     originalTextHeight?: number;
     originalFontSize?: number;
@@ -455,25 +456,38 @@ export class ZContainer extends Phaser.GameObjects.Container {
         return result as ZContainer[];
     }
 
+    public addParticleSystem(particles: Phaser.GameObjects.Particles.ParticleEmitter): void {
+        this.particleSystems.push(particles);
+        if (!this.emitter) {
+            this.emitter = particles; // Keep reference to first emitter for backwards compatibility
+        }
+    }
+
     public loadParticle(emitterConfig: any, textureKey: string): void {
-        /*
         try {
-            const manager = this.scene.add.particles(textureKey);
-            this.emitter = manager.createEmitter(emitterConfig);
-            this.add(manager); // attach emitter manager to container
+            const particles = this.scene.add.particles(0, 0, textureKey, emitterConfig);
+            this.add(particles);
+            this.addParticleSystem(particles);
             this.playParticleAnim();
         } catch (error) {
             console.error("Error creating ParticleEmitter:", error);
         }
-        */
     }
 
     playParticleAnim() {
-        // if (this.emitter) this.emitter.on = true;
+        this.particleSystems.forEach(particles => {
+            if (particles) {
+                particles.start();
+            }
+        });
     }
 
     stopParticleAnim() {
-        // if (this.emitter) this.emitter.on = false;
+        this.particleSystems.forEach(particles => {
+            if (particles) {
+                particles.stop();
+            }
+        });
     }
 
     /**

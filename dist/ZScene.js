@@ -8,6 +8,7 @@ import { ZScroll } from "./ZScroll";
 import { ZNineSlice } from "./ZNineSlice";
 import { ZTextInput } from "./ZTextInput";
 import { ZSpine } from "./ZSpine";
+import { ParticleConverter } from "./ParticleConverter";
 export class ZScene {
     static assetTypes = new Map([
         ["btn", ZButton],
@@ -156,9 +157,13 @@ export class ZScene {
     // Add all children to the main stage
     // phaserScene param is accepted for API compatibility with PIXI version (ignored — scene reference is stored in constructor)
     loadStage(phaserScene, loadChildren = true) {
-        const gameW = this.phaserScene.scale.width || window.innerWidth;
-        const gameH = this.phaserScene.scale.height || window.innerHeight;
-        this.resize(gameW, gameH);
+        // Always spawn objects with "portrait" orientation first.
+        // This ensures all setInstanceData calls inside createAsset() see
+        // parentContainer.currentTransform === undefined (the else-branch in
+        // applyTransform), so no pivot is subtracted during construction.
+        // The subsequent resize() call then correctly transitions to the actual
+        // orientation — mirroring the portrait→landscape path that always works.
+        this.orientation = "portrait";
         const stageAssets = this.data.stage;
         const children = stageAssets?.children;
         if (children && loadChildren) {
@@ -171,8 +176,6 @@ export class ZScene {
                     this.addToResizeMap(mc);
                     this._sceneStage.add(mc);
                     this._sceneStage[mc.name] = mc;
-                    const bounds = mc.getBounds();
-                    //console.log('Added to stage:', mc.name, 'visible:', mc.visible, 'alpha:', mc.alpha, 'bounds:', bounds.width, 'x', bounds.height, 'at', mc.x, mc.y);
                 }
                 else {
                     console.warn('Failed to spawn template:', tempName);
@@ -180,15 +183,10 @@ export class ZScene {
             }
         }
         this.phaserScene.add.existing(this._sceneStage);
-        //this needs to happen twice...
+        // Resize to actual window orientation now that the full hierarchy is built.
         const w = this.phaserScene.scale.width || window.innerWidth;
         const h = this.phaserScene.scale.height || window.innerHeight;
         this.resize(w, h);
-        setTimeout(() => {
-            const w2 = this.phaserScene.scale.width || window.innerWidth;
-            const h2 = this.phaserScene.scale.height || window.innerHeight;
-            this.resize(w2, h2);
-        }, 100);
     }
     /**
      * Return the inner design resolution adjusted for current orientation.
@@ -395,22 +393,31 @@ export class ZScene {
             let asset;
             // inputField
             if (type === "inputField") {
-                const inputData = childNode;
-                const textInput = new ZTextInput(this.phaserScene, inputData);
-                textInput.setName(inputData.name);
-                mc[inputData.name] = textInput;
-                mc.add(textInput);
-                this.applyFilters(childNode, textInput);
+                try {
+                    const inputData = childNode;
+                    const textInput = new ZTextInput(this.phaserScene, inputData);
+                    textInput.setName(inputData.name);
+                    mc[inputData.name] = textInput;
+                    mc.add(textInput);
+                    this.applyFilters(childNode, textInput);
+                }
+                catch (e) {
+                    console.warn(`ZScene: Failed to create inputField "${childNode.name}":`, e);
+                }
                 continue;
             }
             // bitmapFontLocked
             if (type === "bitmapFontLocked") {
                 const textNode = childNode;
                 if (textNode.fontName && this.phaserScene.cache.bitmapFont.exists(textNode.fontName)) {
-                    const tf = this.phaserScene.add.bitmapText(textNode.x ?? 0, textNode.y ?? 0, textNode.fontName, textNode.text || "");
+                    const posX = (textNode.x ?? 0) - (textNode.pivotX ?? 0);
+                    const posY = (textNode.y ?? 0) - (textNode.pivotY ?? 0);
+                    const tf = this.phaserScene.add.bitmapText(posX, posY, textNode.fontName, textNode.text || "");
                     if (textNode.textAnchorX !== undefined && textNode.textAnchorY !== undefined) {
                         tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
                     }
+                    // Store currentTransform so parent setOrigin() can pivot-adjust this text correctly.
+                    tf.currentTransform = { x: posX, y: posY };
                     tf.setName(textNode.name);
                     mc[textNode.name] = tf;
                     mc.add(tf);
@@ -421,24 +428,42 @@ export class ZScene {
             // textField / bitmapText
             if (type === "textField" || type === "bmpTextField" || type === "bitmapText") {
                 const textNode = childNode;
+                // pivotX/Y on text nodes is PIXI's tf.pivot — there is no native pivot on Phaser
+                // Text objects, so we absorb it into the stored position (same net visual result).
+                const posX = (textNode.x ?? 0) - (textNode.pivotX ?? 0);
+                const posY = (textNode.y ?? 0) - (textNode.pivotY ?? 0);
                 const fontKey = textNode.uniqueFontName || textNode.fontName;
                 const hasBitmap = fontKey && this.phaserScene.cache.bitmapFont.exists(fontKey);
                 if (hasBitmap) {
-                    const tf = this.phaserScene.add.bitmapText(textNode.x, textNode.y, fontKey, textNode.text || "", textNode.size || undefined);
+                    const tf = this.phaserScene.add.bitmapText(posX, posY, fontKey, textNode.text || "", textNode.size || undefined);
                     if (typeof textNode.letterSpacing === "number") {
                         tf.setLetterSpacing(textNode.letterSpacing);
                     }
                     if (textNode.textAnchorX !== undefined && textNode.textAnchorY !== undefined) {
                         tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
                     }
+                    if (textNode.rotation)
+                        tf.rotation = textNode.rotation;
+                    if (textNode.alpha !== undefined)
+                        tf.alpha = textNode.alpha;
+                    // Store currentTransform so parent setOrigin() can pivot-adjust this text correctly.
+                    tf.currentTransform = { x: posX, y: posY };
                     tf.setName(textNode.name);
                     mc.add(tf);
                     mc[textNode.name] = tf;
                     this.applyFilters(childNode, tf);
                 }
                 else {
+                    // --- Resolve fill color / gradient ---
                     let colorStr = "#ffffff";
-                    if (textNode.color) {
+                    const gd = textNode.gradientData;
+                    if (textNode.fillType === "gradient" && gd?.colors && gd.colors.length >= 2) {
+                        // Phaser Text has no native gradient — use first color and warn.
+                        const c0 = gd.colors[0];
+                        colorStr = typeof c0 === "number" ? "#" + c0.toString(16).padStart(6, "0") : c0;
+                        console.warn(`ZScene: gradient fill on text "${textNode.name}" — using first color only (Phaser Text has no native gradient)`);
+                    }
+                    else if (textNode.color !== undefined && textNode.color !== null) {
                         if (typeof textNode.color === "number") {
                             colorStr = "#" + textNode.color.toString(16).padStart(6, "0");
                         }
@@ -450,20 +475,38 @@ export class ZScene {
                         fontFamily: textNode.fontName || "Arial",
                         fontSize: typeof textNode.size === "number" ? `${textNode.size}px` : textNode.size,
                         color: colorStr,
-                        align: textNode.align || "left",
+                        align: (textNode.align || "left"),
                     };
                     if (typeof textNode.fontWeight === "string") {
                         style.fontStyle = textNode.fontWeight;
                     }
-                    if (textNode.wordWrap && typeof textNode.wordWrapWidth === "number") {
-                        style.wordWrap = { width: textNode.wordWrapWidth, useAdvancedWrap: true };
+                    if (textNode.wordWrap) {
+                        style.wordWrap = {
+                            width: textNode.wordWrapWidth ?? 0,
+                            useAdvancedWrap: true,
+                        };
                     }
-                    const tf = this.phaserScene.add.text(textNode.x ?? 0, textNode.y ?? 0, (textNode.text ?? "") + "", style);
-                    if (typeof textNode.stroke === "string" && typeof textNode.strokeThickness === "number") {
-                        tf.setStroke(textNode.stroke, textNode.strokeThickness);
+                    if (textNode.breakWords) {
+                        // Phaser uses wordWrap.width with breakWords flag or maxLines — simulate via wrap
+                        if (!style.wordWrap)
+                            style.wordWrap = { width: textNode.wordWrapWidth ?? 500, useAdvancedWrap: false };
+                    }
+                    if (typeof textNode.stroke === "string" || typeof textNode.stroke === "number") {
+                        const strokeColor = typeof textNode.stroke === "number"
+                            ? "#" + textNode.stroke.toString(16).padStart(6, "0")
+                            : textNode.stroke;
+                        style.stroke = strokeColor;
+                        style.strokeThickness = textNode.strokeThickness ?? 0;
                     }
                     if (typeof textNode.padding === "number") {
-                        tf.setPadding(textNode.padding);
+                        style.padding = { x: textNode.padding, y: textNode.padding };
+                    }
+                    else if (Array.isArray(textNode.padding)) {
+                        style.padding = { left: textNode.padding[0], top: textNode.padding[1] ?? textNode.padding[0] };
+                    }
+                    const tf = this.phaserScene.add.text(posX, posY, (textNode.text ?? "") + "", style);
+                    if (typeof textNode.letterSpacing === "number") {
+                        tf.setLetterSpacing(textNode.letterSpacing);
                     }
                     if (typeof textNode.leading === "number") {
                         tf.setLineSpacing(textNode.leading);
@@ -479,6 +522,12 @@ export class ZScene {
                     if (textNode.textAnchorX !== undefined && textNode.textAnchorY !== undefined) {
                         tf.setOrigin(textNode.textAnchorX, textNode.textAnchorY);
                     }
+                    if (textNode.rotation)
+                        tf.rotation = textNode.rotation;
+                    if (textNode.alpha !== undefined)
+                        tf.alpha = textNode.alpha;
+                    // Store currentTransform so parent setOrigin() can pivot-adjust this text correctly.
+                    tf.currentTransform = { x: posX, y: posY };
                     tf.setName(textNode.name);
                     mc[textNode.name] = tf;
                     mc.add(tf);
@@ -508,7 +557,18 @@ export class ZScene {
                     continue;
                 }
                 asset.setDisplaySize(spriteNode.width, spriteNode.height);
-                asset.setOrigin(0, 0);
+                // Convert PIXI-style pivotX/Y (pixel offset from top-left) to Phaser origin fraction.
+                // In PIXI: img.pivot.set(pivotX, pivotY) with anchor defaulting to (0,0).
+                // In Phaser: setOrigin(pivotX/width, pivotY/height) achieves the same visual result.
+                const spritePivotX = spriteNode.pivotX ?? 0;
+                const spritePivotY = spriteNode.pivotY ?? 0;
+                const originX = spriteNode.width > 0 ? spritePivotX / spriteNode.width : 0;
+                const originY = spriteNode.height > 0 ? spritePivotY / spriteNode.height : 0;
+                asset.setOrigin(originX, originY);
+                // Store currentTransform so parent ZContainer.setOrigin() can correctly
+                // apply parent-pivot offset to this sprite's position (without it, setOrigin
+                // falls to the else-branch and discards spriteNode.x/y entirely).
+                asset.currentTransform = { x: spriteNode.x ?? 0, y: spriteNode.y ?? 0 };
                 mc.add(asset);
                 mc[spriteNode.name] = asset;
                 this.applyFilters(childNode, asset);
@@ -522,8 +582,6 @@ export class ZScene {
                 const nineSlice = new ZNineSlice(this.phaserScene, 0, 0, textureKeyOrObj, frame, nineSliceData, this.orientation);
                 mc.add(nineSlice);
                 mc[nineSliceData.name] = nineSlice;
-                nineSlice.setDisplaySize(nineSliceData.width, nineSliceData.height);
-                nineSlice.setOrigin(0, 0);
                 this.addToResizeMap(nineSlice);
             }
             // Asset / State / Button / Toggle / Slider / Scroll / Animation
@@ -578,18 +636,23 @@ export class ZScene {
                     const jsonUrl = assetBasePath + particleData.jsonPath + "?t=" + Date.now();
                     fetch(jsonUrl)
                         .then(r => r.json())
-                        .then((config) => {
+                        .then((pixiConfig) => {
                         try {
                             const key = textureKeys[0];
                             if (key && this.phaserScene.textures.exists(key)) {
-                                const particles = this.phaserScene.add.particles(0, 0, key, config);
+                                // Convert PIXI particles v5 config to Phaser format
+                                const phaserConfig = ParticleConverter.pixiToPhaserConfig(pixiConfig);
+                                // Create particle system
+                                const particles = this.phaserScene.add.particles(0, 0, key, phaserConfig);
                                 particles.setName(particleData.name || childNode.name);
                                 mc.add(particles);
                                 mc[childNode.name] = particles;
+                                // Store reference for container methods
+                                mc.addParticleSystem(particles);
                             }
                         }
                         catch (e) {
-                            console.error("Error creating particle emitter:", e);
+                            console.error("Error creating particle emitter:", e, "Original PIXI config:", pixiConfig);
                         }
                     })
                         .catch(e => console.error("Failed to load particle config:", e));
@@ -608,10 +671,13 @@ export class ZScene {
                         spineObj.setName(spineData.name || childNode.name);
                         mc.add(spineObj);
                         mc[childNode.name] = spineObj;
-                        // Re-apply the container's transform so the spine object gets the
-                        // correct pivot offset (setOrigin runs on mc.list, which was empty
-                        // when setInstanceData first ran before this async callback fired).
-                        mc.applyTransform();
+                        // Trigger a full resize so the spine (not in resizeMap itself) gets
+                        // correctly positioned by its parent container's setOrigin() call.
+                        // mc.applyTransform() alone is insufficient — it doesn't re-run the
+                        // full stage-scale + parent-hierarchy transform chain that resize() does.
+                        const w = this.phaserScene.scale.width || window.innerWidth;
+                        const h = this.phaserScene.scale.height || window.innerHeight;
+                        this.resize(w, h);
                     }
                 });
                 continue;
@@ -620,6 +686,11 @@ export class ZScene {
             const childTemplate = this.data.templates[childNode.name];
             if (childTemplate?.children) {
                 this.createAsset(asset || mc, childTemplate);
+                // Re-run applyTransform on `asset` now that its children exist.
+                // setInstanceData ran applyTransform when the list was empty → setOrigin
+                // was a no-op. Now all children are present, so setOrigin correctly shifts
+                // them by asset's pivotX/Y (e.g. instance_xr5g: pivotX=477, pivotY=106).
+                asset?.applyTransform?.();
             }
             asset?.init?.();
         }

@@ -84,9 +84,28 @@ export class ZTextInput extends ZContainer {
         input.addEventListener("input", () => {
             this._text = input.value;
         });
-        this.domElement = scene.add.dom(0, 0, input);
-        this.add(this.domElement);
-        this.inputElement = input;
+        try {
+            this.domElement = scene.add.dom(0, 0, input);
+            this.add(this.domElement);
+            this.inputElement = input;
+        }
+        catch (e) {
+            // DOM container not enabled in Phaser game config (dom.createContainer: true).
+            // Fall back to a plain Text object so the scene still loads.
+            console.warn(`ZTextInput: DOM support not available (add 'dom: { createContainer: true }' to your Phaser game config). ` +
+                `Rendering "${data.name}" as a plain text label instead.`);
+            const inp = this.props?.input;
+            const colorStr = inp?.color
+                ? (typeof inp.color === "number" ? "#" + inp.color.toString(16).padStart(6, "0") : inp.color)
+                : "#ffffff";
+            const fallback = scene.add.text(0, 0, this._text, {
+                fontFamily: inp?.fontFamily ?? "Arial",
+                fontSize: inp?.fontSize ?? "16px",
+                color: colorStr,
+            });
+            fallback.setName(data.name);
+            this.add(fallback);
+        }
     }
     /** Get the current text value. */
     getText() {

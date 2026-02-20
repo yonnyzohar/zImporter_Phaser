@@ -13,5 +13,6 @@ export { ZCuePointsManager } from './ZCuePointsManager';
 export { ZNineSlice } from './ZNineSlice';
 export { ZTextInput } from './ZTextInput';
 export { ZSpine } from './ZSpine';
+export { ParticleConverter } from './ParticleConverter';
 export { SpinePlugin } from '@esotericsoftware/spine-phaser';
 

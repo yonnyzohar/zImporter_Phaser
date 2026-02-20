@@ -16,6 +16,7 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     name: string;
     _fitToScreen: boolean;
     emitter?: Phaser.GameObjects.Particles.ParticleEmitter;
+    particleSystems: Phaser.GameObjects.Particles.ParticleEmitter[];
     originalTextWidth?: number;
     originalTextHeight?: number;
     originalFontSize?: number;
@@ -50,6 +51,7 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     applyAnchor(): void;
     isAnchored(): boolean;
     getAllOfType(type: string): ZContainer[];
+    addParticleSystem(particles: Phaser.GameObjects.Particles.ParticleEmitter): void;
     loadParticle(emitterConfig: any, textureKey: string): void;
     playParticleAnim(): void;
     stopParticleAnim(): void;

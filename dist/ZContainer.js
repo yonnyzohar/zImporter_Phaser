@@ -7,6 +7,7 @@ export class ZContainer extends Phaser.GameObjects.Container {
     name = "";
     _fitToScreen = false;
     emitter;
+    particleSystems = [];
     originalTextWidth;
     originalTextHeight;
     originalFontSize;
@@ -231,8 +232,6 @@ export class ZContainer extends Phaser.GameObjects.Container {
             return;
         const screenWidth = this.scene.scale.width;
         const screenHeight = this.scene.scale.height;
-        // Reset scale so measurements are at natural size
-        this.setScale(1, 1);
         // Helper: convert a world-space point to parent-local coords
         const parentMat = this.parentContainer
             ? this.parentContainer.getWorldTransformMatrix()
@@ -245,52 +244,52 @@ export class ZContainer extends Phaser.GameObjects.Container {
         // Local dimensions of the screen (accounts for parent scale/rotation)
         const localScreenW = btmRight.x - topLeft.x;
         const localScreenH = btmRight.y - topLeft.y;
-        // Position container at top-left of screen
-        this.x = topLeft.x;
-        this.y = topLeft.y;
         const firstChild = this.list[0];
         const isNineSlice = firstChild instanceof Phaser.GameObjects.NineSlice;
         if (isNineSlice) {
+            this.x = topLeft.x;
+            this.y = topLeft.y;
+            this.setScale(1, 1);
             firstChild.width = localScreenW;
             firstChild.height = localScreenH;
             return;
         }
-        // Get natural content bounds in world space at scale=1
-        const naturalBounds = this.getBounds();
-        if (naturalBounds.width === 0 || naturalBounds.height === 0)
+        // Compute content bounds directly from children's local properties,
+        // avoiding getBounds() which requires up-to-date world transforms.
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const child of this.list) {
+            const c = child;
+            const dw = c.displayWidth ?? c.width ?? 0;
+            const dh = c.displayHeight ?? c.height ?? 0;
+            if (dw === 0 && dh === 0)
+                continue;
+            const ox = (c.originX ?? 0) * dw;
+            const oy = (c.originY ?? 0) * dh;
+            const cx = (c.x ?? 0) - ox;
+            const cy = (c.y ?? 0) - oy;
+            minX = Math.min(minX, cx);
+            minY = Math.min(minY, cy);
+            maxX = Math.max(maxX, cx + dw);
+            maxY = Math.max(maxY, cy + dh);
+        }
+        if (!isFinite(minX) || !isFinite(minY))
             return;
-        // Natural content size in parent-local units
-        const pScaleX = parentMat ? this._getParentWorldScaleX() : 1;
-        const pScaleY = parentMat ? this._getParentWorldScaleY() : 1;
-        const localContentW = naturalBounds.width / pScaleX;
-        const localContentH = naturalBounds.height / pScaleY;
-        let scale;
-        if (screenWidth > screenHeight) {
-            // Landscape: scale to fill width
-            scale = localScreenW / localContentW;
-        }
-        else {
-            // Portrait: scale to fill height
-            scale = localScreenH / localContentH;
-        }
+        const localContentW = maxX - minX;
+        const localContentH = maxY - minY;
+        if (localContentW === 0 || localContentH === 0)
+            return;
+        // Scale to cover the screen (use max to cover, min to fit)
+        const scaleX = localScreenW / localContentW;
+        const scaleY = localScreenH / localContentH;
+        const scale = Math.max(scaleX, scaleY);
         this.setScale(scale, scale);
-        // Center around screen midpoint
-        const displayedW = localContentW * scale;
-        const displayedH = localContentH * scale;
-        this.x = mid.x - displayedW / 2;
-        this.y = mid.y - displayedH / 2;
-    }
-    _getParentWorldScaleX() {
-        if (!this.parentContainer)
-            return 1;
-        const mat = this.parentContainer.getWorldTransformMatrix();
-        return Math.sqrt(mat.a * mat.a + mat.b * mat.b);
-    }
-    _getParentWorldScaleY() {
-        if (!this.parentContainer)
-            return 1;
-        const mat = this.parentContainer.getWorldTransformMatrix();
-        return Math.sqrt(mat.c * mat.c + mat.d * mat.d);
+        // Center the content around the screen midpoint in parent-local space.
+        // The content's local top-left is at (minX, minY); after scale it offset
+        // from the container origin by (minX*scale, minY*scale).
+        // We want content center to land on mid:
+        //   this.x + (minX + localContentW/2) * scale = mid.x
+        this.x = mid.x - (minX + localContentW / 2) * scale;
+        this.y = mid.y - (minY + localContentH / 2) * scale;
     }
     /**/
     setX(value) {
@@ -382,23 +381,36 @@ export class ZContainer extends Phaser.GameObjects.Container {
         }
         return result;
     }
+    addParticleSystem(particles) {
+        this.particleSystems.push(particles);
+        if (!this.emitter) {
+            this.emitter = particles; // Keep reference to first emitter for backwards compatibility
+        }
+    }
     loadParticle(emitterConfig, textureKey) {
-        /*
         try {
-            const manager = this.scene.add.particles(textureKey);
-            this.emitter = manager.createEmitter(emitterConfig);
-            this.add(manager); // attach emitter manager to container
+            const particles = this.scene.add.particles(0, 0, textureKey, emitterConfig);
+            this.add(particles);
+            this.addParticleSystem(particles);
             this.playParticleAnim();
-        } catch (error) {
+        }
+        catch (error) {
             console.error("Error creating ParticleEmitter:", error);
         }
-        */
     }
     playParticleAnim() {
-        // if (this.emitter) this.emitter.on = true;
+        this.particleSystems.forEach(particles => {
+            if (particles) {
+                particles.start();
+            }
+        });
     }
     stopParticleAnim() {
-        // if (this.emitter) this.emitter.on = false;
+        this.particleSystems.forEach(particles => {
+            if (particles) {
+                particles.stop();
+            }
+        });
     }
 }
 //# sourceMappingURL=ZContainer.js.map

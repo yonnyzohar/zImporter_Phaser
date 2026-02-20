@@ -10,6 +10,7 @@ import { ZNineSlice } from "./ZNineSlice";
 import { SceneData, TemplateData, InstanceData, AnimTrackData, SpriteData, SpineData, NineSliceData, ParticleData, TextData, TextInputData, BaseAssetData, BitmapFontLocked } from "./SceneData";
 import { ZTextInput } from "./ZTextInput";
 import { ZSpine } from "./ZSpine";
+import { ParticleConverter } from "./ParticleConverter";
 
 export type AssetType = "btn" | "asset" | "state" | "toggle" | "none" | "slider" | "scrollBar" | "fullScreen" | "animation";
 
@@ -688,17 +689,43 @@ export class ZScene {
           const jsonUrl = assetBasePath + particleData.jsonPath + "?t=" + Date.now();
           fetch(jsonUrl)
             .then(r => r.json())
-            .then((config: any) => {
+            .then((pixiConfig: any) => {
               try {
                 const key = textureKeys[0];
                 if (key && this.phaserScene.textures.exists(key)) {
-                  const particles = this.phaserScene.add.particles(0, 0, key, config);
+                  // Convert PIXI particles v5 config to Phaser format
+                  const phaserConfig = ParticleConverter.pixiToPhaserConfig(pixiConfig);
+
+                  console.log("Creating particles with texture key:", key);
+                  console.log("Texture exists:", this.phaserScene.textures.exists(key));
+
+                  // Create particle system  
+                  const particles = this.phaserScene.add.particles(0, 0, key, phaserConfig);
                   particles.setName(particleData.name || childNode.name);
+
+                  // Ensure particles are visible and positioned correctly
+                  particles.setVisible(true);
+                  particles.setDepth(1000); // Bring to front
+
+                  // For infinite emission, ensure no auto-stopping
+                  particles.stop(false); // Stop any default behavior
+                  particles.start(); // Start fresh with infinite emission
+
+                  console.log("Particle system created:", particles);
+                  console.log("Particle position:", particles.x, particles.y);
+
                   mc.add(particles);
                   (mc as any)[childNode.name] = particles;
+
+                  // Store reference for container methods
+                  mc.addParticleSystem(particles);
+
+                  console.log("Particle system started with infinite emission");
+                } else {
+                  console.error("Texture not found or doesn't exist:", key, "Available textures:", this.phaserScene.textures.list);
                 }
               } catch (e) {
-                console.error("Error creating particle emitter:", e);
+                console.error("Error creating particle emitter:", e, "Original PIXI config:", pixiConfig);
               }
             })
             .catch(e => console.error("Failed to load particle config:", e));

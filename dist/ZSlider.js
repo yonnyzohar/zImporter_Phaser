@@ -17,11 +17,19 @@ export class ZSlider extends ZContainer {
             console.error("ZSlider is missing handle or track");
             return;
         }
-        this.sliderWidth = this.track.width;
+        // ZContainer.width is always 0 in Phaser — compute from the image child inside the track.
+        let trackWidth = 0;
+        for (const child of this.track.list) {
+            const w = child.displayWidth ?? child.width ?? 0;
+            if (w > trackWidth)
+                trackWidth = w;
+        }
+        this.sliderWidth = trackWidth;
         this.onDragStartBinded = this.onDragStart.bind(this);
         this.onDragEndBinded = this.onDragEnd.bind(this);
         this.onDragBinded = this.onDrag.bind(this);
-        this.handle.setInteractive({ cursor: 'pointer' });
+        // ZButton manages its own hit area via _hitAreaGraphics which forwards events;
+        // calling setInteractive() on a zero-sized Container does nothing useful.
         this.handle.on('pointerdown', this.onDragStartBinded);
         this.handle.on('touchstart', this.onDragStartBinded);
     }
@@ -72,12 +80,22 @@ export class ZSlider extends ZContainer {
         }
         if (clientX === undefined)
             return;
-        // Convert global X to local X in handle's parent
-        const parent = this.handle.parentContainer || this;
-        const bounds = parent.getBounds();
-        const localX = Phaser.Math.Clamp(clientX - bounds.x, 0, this.sliderWidth);
+        if (!this.sliderWidth)
+            return;
+        // Convert clientX (CSS viewport pixels) → canvas pixels → Phaser world X → slider-local X.
+        // This correctly handles canvas CSS scaling and camera zoom/scroll.
+        const canvas = this.scene.game.canvas;
+        const rect = canvas.getBoundingClientRect();
+        const cssToCanvas = canvas.width / rect.width;
+        const cam = this.scene.cameras.main;
+        const worldX = ((clientX - rect.left) * cssToCanvas) / cam.zoom + cam.scrollX;
+        // applyInverse maps world coords → this container's local coords.
+        // Pass the container's own world Y (mat.ty) so that any rotation is handled correctly.
+        const mat = this.getWorldTransformMatrix();
+        const localPt = mat.applyInverse(worldX, mat.ty);
+        const localX = Phaser.Math.Clamp(localPt.x, 0, this.sliderWidth);
         this.handle.x = localX;
-        const t = this.handle.x / this.sliderWidth;
+        const t = localX / this.sliderWidth;
         if (this.callback) {
             this.callback(t);
         }
