@@ -191,6 +191,8 @@ export class ZScene {
 
     if (children && loadChildren) {
       for (const child of children) {
+        let c = child as InstanceData;
+        if (c.guide) continue;//guides are not rendered
         const tempName = child.name;
         const mc = this.spawn(tempName);
         if (mc) {
@@ -646,6 +648,7 @@ export class ZScene {
       // Asset / State / Button / Toggle / Slider / Scroll / Animation
       if (ZScene.isAssetType(type)) {
         const instanceData = childNode as InstanceData;
+        if (instanceData.guide) continue;//guides are not rendered
         const frames = this.getChildrenFrames(childNode.name);
         if (Object.keys(frames).length > 0) {
           asset = new ZTimeline(this.phaserScene);
