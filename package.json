@@ -1,6 +1,6 @@
 {
   "name": "zimporter-phaser",
-  "version": "1.0.47",
+  "version": "1.0.48",
   "description": "A TypeScript library for importing and managing zStudio scenes in Phaser applications.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,7 +15,10 @@
   "author": "Yonathan Zohar",
   "license": "MIT",
   "peerDependencies": {
-    "phaser": "^3.60.0"
+    "phaser": "^3.60.0",
+    "gsap": "^3.12.7",
+    "phaser-spine": "^2.2.0",
+    "@esotericsoftware/spine-phaser": "^4.1.55"
   },
   "devDependencies": {
     "@types/eslint": "^9.6.1",
@@ -28,12 +31,8 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
-    "@esotericsoftware/spine-phaser": "^4.1.55",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
-    "gsap": "^3.12.7",
-    "phaser": "^3.60.0",
-    "phaser-spine": "^2.2.0",
     "reflect-metadata": "^0.2.2"
   },
   "files": [
