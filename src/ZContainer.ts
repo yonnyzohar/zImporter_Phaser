@@ -3,7 +3,7 @@ import { InstanceData } from "./SceneData";
 import { OrientationData } from "./SceneData";
 import { ZScene } from "./ZScene";
 import { ZTimeline } from "./ZTimeline";
-import { updateHitArea } from "./ZButton";
+import { SpineGameObject } from "@esotericsoftware/spine-phaser";
 
 export interface AnchorData {
     anchorType: string;
@@ -56,6 +56,19 @@ export class ZContainer extends Phaser.GameObjects.Container {
         }
 
         return null;
+    }
+
+    /**
+     * Searches direct children for a Spine animation object and returns the first match.
+     * @returns The first `SpineGameObject` found, or `undefined` if none exists.
+     */
+    getSpine(): SpineGameObject | undefined {
+        for (const child of this.list) {
+            if ((child as any).skeleton && (child as any).animationState) {
+                return child as unknown as SpineGameObject;
+            }
+        }
+        return undefined;
     }
 
     getAllByName(childName: string): ZContainer[] {

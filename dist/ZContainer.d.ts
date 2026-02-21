@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { InstanceData } from "./SceneData";
 import { OrientationData } from "./SceneData";
+import { SpineGameObject } from "@esotericsoftware/spine-phaser";
 export interface AnchorData {
     anchorType: string;
     anchorPercentage: {
@@ -26,6 +27,11 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     constructor(scene: Phaser.Scene, x?: number, y?: number, children?: Phaser.GameObjects.GameObject[]);
     getChildByName(name: string): Phaser.GameObjects.GameObject | null;
     get(childName: string): ZContainer | null;
+    /**
+     * Searches direct children for a Spine animation object and returns the first match.
+     * @returns The first `SpineGameObject` found, or `undefined` if none exists.
+     */
+    getSpine(): SpineGameObject | undefined;
     getAllByName(childName: string): ZContainer[];
     init(): void;
     getType(): string;

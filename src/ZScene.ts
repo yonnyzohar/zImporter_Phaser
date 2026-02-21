@@ -11,6 +11,7 @@ import { SceneData, TemplateData, InstanceData, AnimTrackData, SpriteData, Spine
 import { ZTextInput } from "./ZTextInput";
 import { ZSpine } from "./ZSpine";
 import { ParticleConverter } from "./ParticleConverter";
+import { SpineGameObject } from "@esotericsoftware/spine-phaser";
 
 export type AssetType = "btn" | "asset" | "state" | "toggle" | "none" | "slider" | "scrollBar" | "fullScreen" | "animation";
 
@@ -742,7 +743,7 @@ export class ZScene {
         let assetBasePath = this.assetBasePath;
         if (!assetBasePath.endsWith("/")) assetBasePath += "/";
         const zSpine = new ZSpine(this.phaserScene, spineData, assetBasePath);
-        zSpine.load((spineObj: any) => {
+        zSpine.load((spineObj: SpineGameObject | undefined) => {
           if (spineObj) {
             spineObj.setName(spineData.name || childNode.name);
             mc.add(spineObj);

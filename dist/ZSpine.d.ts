@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { SpineData } from "./SceneData";
-type SpineCallback = (spineObj: Phaser.GameObjects.GameObject | undefined) => void;
+import { SpineGameObject } from "@esotericsoftware/spine-phaser";
+type SpineCallback = (spineObj: SpineGameObject | undefined) => void;
 /**
  * ZSpine — loads a Spine 4.x skeleton using the @esotericsoftware/spine-phaser plugin.
  *
