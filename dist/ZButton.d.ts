@@ -20,7 +20,7 @@ export declare class ZButton extends ZContainer {
     disabledState?: ZContainer;
     disabledLabelContainer?: ZContainer;
     disabledLabelContainer2?: ZContainer;
-    callback?: () => void;
+    pressCallback?: () => void;
     longPressCallback?: () => void;
     private labelState;
     getType(): string;
@@ -30,6 +30,10 @@ export declare class ZButton extends ZContainer {
     setLabel2(name: string): void;
     setFixedTextSize(fixed: boolean): void;
     makeSingleLine(): void;
+    getLabel(): Phaser.GameObjects.Text | null;
+    getLabel2(): Phaser.GameObjects.Text | null;
+    hasLabel(): boolean;
+    hasLabel2(): boolean;
     setCallback(func: () => void): void;
     removeCallback(): void;
     setLongPressCallback(func: () => void): void;

@@ -50,6 +50,18 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     setScaleY(y?: number): this;
     applyAnchor(): void;
     isAnchored(): boolean;
+    setAlpha(value: number): this;
+    getAlpha(): number;
+    setVisible(value: boolean): this;
+    getVisible(): boolean;
+    getTextStyle(): Phaser.Types.GameObjects.Text.TextStyle | null;
+    /**
+     * Creates a shallow structural clone of this `ZContainer`, copying position,
+     * scale, rotation, alpha, visibility, and name. Direct children are cloned
+     * by type: `Phaser.GameObjects.Text`, `Phaser.GameObjects.Image`,
+     * `Phaser.GameObjects.NineSlice`, and any object that exposes its own `clone()` method.
+     */
+    clone(): ZContainer;
     getAllOfType(type: string): ZContainer[];
     addParticleSystem(particles: Phaser.GameObjects.Particles.ParticleEmitter): void;
     loadParticle(emitterConfig: any, textureKey: string): void;
