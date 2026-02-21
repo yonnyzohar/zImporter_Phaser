@@ -1,6 +1,6 @@
 {
   "entryPoints": ["src/index.ts"], // Change this to your main file or folder
-  "out": "docs",
+  "out": "/Users/yonthanzohar/yonny/zstudio-site/public/docs/phaser",
   "includeVersion": true,
   "excludePrivate": true,
   "excludeProtected": false,

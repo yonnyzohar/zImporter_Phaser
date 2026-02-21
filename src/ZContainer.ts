@@ -426,9 +426,8 @@ export class ZContainer extends Phaser.GameObjects.Container {
 
     public setAlpha(value: number): this {
         this.alpha = value;
-        if (this.currentTransform) {
-            this.currentTransform.alpha = value;
-        }
+        if (this.portrait) this.portrait.alpha = value;
+        if (this.landscape) this.landscape.alpha = value;
         return this;
     }
 
@@ -438,9 +437,8 @@ export class ZContainer extends Phaser.GameObjects.Container {
 
     public setVisible(value: boolean): this {
         this.visible = value;
-        if (this.currentTransform) {
-            this.currentTransform.visible = value;
-        }
+        if (this.portrait) this.portrait.visible = value;
+        if (this.landscape) this.landscape.visible = value;
         return this;
     }
 
