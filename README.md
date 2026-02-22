@@ -281,6 +281,56 @@ The package exposes several classes and methods for interacting with imported as
   You can also set a string on the text via the container using:
   `setText(text:string):void`
 
+#### `Transform Properties — Orientation-Aware vs Global`
+
+`ZContainer` maintains separate transform data for portrait and landscape orientations. Because of this, **position, scale, width, and height must be accessed through `ZContainer` methods** so the values are stored correctly and survive an orientation change:
+
+```ts
+container.setX(100);
+container.setY(200);
+container.setScaleX(1.5);
+container.setScaleY(1.5);
+container.setWidth(300);
+container.setHeight(150);
+```
+
+Setting `x`, `y`, `scaleX`, etc. directly on the object will work visually but the values will be **overwritten** the next time the scene resizes or orientation changes.
+
+**Visibility, alpha, and rotation are orientation-independent** — they apply to both portrait and landscape at once, so you can set them directly or via their helper methods:
+
+```ts
+container.setVisible(false);   // hides in both orientations
+container.setAlpha(0.5);       // applies to both orientations
+container.rotation = Math.PI;  // applies to both orientations
+```
+
+#### `Working with Spine`
+
+Spine assets are loaded automatically by the scene. Once the stage is loaded, retrieve the `SpineGameObject` from any `ZContainer` using `getSpine()` and then interact with it through the standard Spine API:
+
+```ts
+import { SpineGameObject } from '@esotericsoftware/spine-phaser';
+
+const spineContainer = stage.get('mySpineAsset');
+const spineObj: SpineGameObject | undefined = spineContainer?.getSpine();
+
+if (spineObj) {
+    // Play an animation on track 0, looping
+    spineObj.animationState.setAnimation(0, 'run', true);
+
+    // Change the active skin
+    spineObj.skeleton.setSkinByName('mySkin');
+    spineObj.skeleton.setToSetupPose();
+
+    // Listen for animation completion
+    spineObj.animationState.addListener({
+        complete: (entry) => {
+            console.log('Animation complete:', entry.animation?.name);
+        }
+    });
+}
+```
+
 ### `ZButton`
 
 * Extends `ZContainer`.
