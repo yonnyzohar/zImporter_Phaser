@@ -370,8 +370,8 @@ export class ZScene {
       let fontsLoaded = 0;
       const fonts = (placementsObj as any).fonts as string[];
       for (const fontName of fonts) {
-        const pngUrl = assetBasePath + fontName + '.png';
-        const xmlUrl = assetBasePath + fontName + '.fnt';
+        const pngUrl = assetBasePath + "bitmapFonts/" + fontName + '.png';
+        const xmlUrl = assetBasePath + "bitmapFonts/" + fontName + '.fnt';
         // Phaser will ignore if keys duplicate, but we want to ensure font is loaded before continuing
         this.phaserScene.load.bitmapFont(fontName, pngUrl, xmlUrl);
       }
