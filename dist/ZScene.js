@@ -168,6 +168,9 @@ export class ZScene {
         const children = stageAssets?.children;
         if (children && loadChildren) {
             for (const child of children) {
+                let c = child;
+                if (c.guide)
+                    continue; //guides are not rendered
                 const tempName = child.name;
                 const mc = this.spawn(tempName);
                 if (mc) {
@@ -317,8 +320,8 @@ export class ZScene {
             let fontsLoaded = 0;
             const fonts = placementsObj.fonts;
             for (const fontName of fonts) {
-                const pngUrl = assetBasePath + fontName + '.png';
-                const xmlUrl = assetBasePath + fontName + '.fnt';
+                const pngUrl = assetBasePath + "bitmapFonts/" + fontName + '.png';
+                const xmlUrl = assetBasePath + "bitmapFonts/" + fontName + '.fnt';
                 // Phaser will ignore if keys duplicate, but we want to ensure font is loaded before continuing
                 this.phaserScene.load.bitmapFont(fontName, pngUrl, xmlUrl);
             }
@@ -587,6 +590,8 @@ export class ZScene {
             // Asset / State / Button / Toggle / Slider / Scroll / Animation
             if (ZScene.isAssetType(type)) {
                 const instanceData = childNode;
+                if (instanceData.guide)
+                    continue; //guides are not rendered
                 const frames = this.getChildrenFrames(childNode.name);
                 if (Object.keys(frames).length > 0) {
                     asset = new ZTimeline(this.phaserScene);
@@ -642,13 +647,27 @@ export class ZScene {
                             if (key && this.phaserScene.textures.exists(key)) {
                                 // Convert PIXI particles v5 config to Phaser format
                                 const phaserConfig = ParticleConverter.pixiToPhaserConfig(pixiConfig);
-                                // Create particle system
+                                console.log("Creating particles with texture key:", key);
+                                console.log("Texture exists:", this.phaserScene.textures.exists(key));
+                                // Create particle system  
                                 const particles = this.phaserScene.add.particles(0, 0, key, phaserConfig);
                                 particles.setName(particleData.name || childNode.name);
+                                // Ensure particles are visible and positioned correctly
+                                particles.setVisible(true);
+                                particles.setDepth(1000); // Bring to front
+                                // For infinite emission, ensure no auto-stopping
+                                particles.stop(false); // Stop any default behavior
+                                particles.start(); // Start fresh with infinite emission
+                                console.log("Particle system created:", particles);
+                                console.log("Particle position:", particles.x, particles.y);
                                 mc.add(particles);
                                 mc[childNode.name] = particles;
                                 // Store reference for container methods
                                 mc.addParticleSystem(particles);
+                                console.log("Particle system started with infinite emission");
+                            }
+                            else {
+                                console.error("Texture not found or doesn't exist:", key, "Available textures:", this.phaserScene.textures.list);
                             }
                         }
                         catch (e) {

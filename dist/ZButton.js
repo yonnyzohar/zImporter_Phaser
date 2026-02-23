@@ -70,6 +70,10 @@ export function updateHitArea(container) {
 export const AttachClickListener = (container, pressCallback, longPressCallback) => {
     // Calculate bounds based on children and set the hit area
     // Calculate bounds relative to (0,0) to ignore origin/pivot
+    if (pressCallback)
+        container.pressCallback = pressCallback;
+    if (longPressCallback)
+        container.longPressCallback = longPressCallback;
     let longPressTimer = null;
     const LONG_PRESS_DURATION = 500;
     const MAX_DRAG_DISTANCE = 20;
@@ -83,7 +87,9 @@ export const AttachClickListener = (container, pressCallback, longPressCallback)
         startPos = getPointerPos(pointer);
         longPressTimer = setTimeout(() => {
             longPressFired = true;
-            longPressCallback && longPressCallback();
+            if (container.longPressCallback) {
+                container.longPressCallback();
+            }
             updateHitArea(container);
         }, LONG_PRESS_DURATION);
         container.on('pointerupoutside', onPointerUp);
@@ -107,7 +113,9 @@ export const AttachClickListener = (container, pressCallback, longPressCallback)
         }
         startPos = null;
         if (!longPressFired && !isDrag) {
-            pressCallback && pressCallback();
+            if (container.pressCallback) {
+                container.pressCallback();
+            }
         }
         container.off('pointerupoutside', onPointerUp);
         container.off('pointerup', onPointerUp);
@@ -138,7 +146,7 @@ export class ZButton extends ZContainer {
     disabledState;
     disabledLabelContainer;
     disabledLabelContainer2;
-    callback;
+    pressCallback;
     longPressCallback;
     labelState = "none";
     getType() {
@@ -213,16 +221,51 @@ export class ZButton extends ZContainer {
         }
     }
     setFixedTextSize(fixed) {
-        // Not implemented: Phaser version would need to propagate to label containers if supported
+        const labelContainers = this.getAllByName("labelContainer");
+        const labelContainers2 = this.getAllByName("labelContainer2");
+        labelContainers.forEach(container => container.setFixedBoxSize(fixed));
+        labelContainers2.forEach(container => container.setFixedBoxSize(fixed));
     }
     makeSingleLine() {
-        // Not implemented: Phaser version would need to propagate to label containers if supported
+        const labelContainers = this.getAllByName("labelContainer");
+        const labelContainers2 = this.getAllByName("labelContainer2");
+        labelContainers2.forEach(label => label.setVisible(false));
+        labelContainers.forEach(label => {
+            const parent = label.parentContainer;
+            if (parent) {
+                label.y = parent.height / 2;
+            }
+        });
+    }
+    getLabel() {
+        if (this.labelState === "single" && this.topLabelContainer) {
+            return this.topLabelContainer.getTextField();
+        }
+        else if (this.labelState === "multi" && this.upLabelContainer) {
+            return this.upLabelContainer.getTextField();
+        }
+        return null;
+    }
+    getLabel2() {
+        if (this.labelState === "single" && this.topLabelContainer2) {
+            return this.topLabelContainer2.getTextField();
+        }
+        else if (this.labelState === "multi" && this.upLabelContainer2) {
+            return this.upLabelContainer2.getTextField();
+        }
+        return null;
+    }
+    hasLabel() {
+        return this.getLabel() !== null;
+    }
+    hasLabel2() {
+        return this.getLabel2() !== null;
     }
     setCallback(func) {
-        this.callback = func;
+        this.pressCallback = func;
     }
     removeCallback() {
-        this.callback = undefined;
+        this.pressCallback = undefined;
     }
     setLongPressCallback(func) {
         this.longPressCallback = func;
@@ -231,8 +274,8 @@ export class ZButton extends ZContainer {
         this.longPressCallback = undefined;
     }
     onClicked() {
-        if (this.callback)
-            this.callback();
+        if (this.pressCallback)
+            this.pressCallback();
     }
     enable() {
         this.removeAllListeners && this.removeAllListeners();
@@ -256,10 +299,7 @@ export class ZButton extends ZContainer {
         this.on("pointerover", this.onOver, this);
         this.on("pointerdown", this.onDown, this);
         this.on("pointerup", this.onOut, this);
-        AttachClickListener(this, () => this.onClicked(), () => {
-            if (this.longPressCallback)
-                this.longPressCallback();
-        });
+        AttachClickListener(this, undefined, undefined);
     }
     disable() {
         this.removeAllListeners && this.removeAllListeners();

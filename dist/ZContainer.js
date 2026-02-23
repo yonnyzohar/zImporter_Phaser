@@ -39,6 +39,18 @@ export class ZContainer extends Phaser.GameObjects.Container {
         }
         return null;
     }
+    /**
+     * Searches direct children for a Spine animation object and returns the first match.
+     * @returns The first `SpineGameObject` found, or `undefined` if none exists.
+     */
+    getSpine() {
+        for (const child of this.list) {
+            if (child.skeleton && child.animationState) {
+                return child;
+            }
+        }
+        return undefined;
+    }
     getAllByName(childName) {
         const result = [];
         const queue = [];
@@ -352,6 +364,80 @@ export class ZContainer extends Phaser.GameObjects.Container {
     }
     isAnchored() {
         return !!this.currentTransform?.isAnchored;
+    }
+    setAlpha(value) {
+        this.alpha = value;
+        if (this.portrait)
+            this.portrait.alpha = value;
+        if (this.landscape)
+            this.landscape.alpha = value;
+        return this;
+    }
+    getAlpha() {
+        return this.alpha;
+    }
+    setVisible(value) {
+        this.visible = value;
+        if (this.portrait)
+            this.portrait.visible = value;
+        if (this.landscape)
+            this.landscape.visible = value;
+        return this;
+    }
+    getVisible() {
+        return this.visible;
+    }
+    getTextStyle() {
+        const tf = this.getTextField();
+        if (!tf)
+            return null;
+        return tf.style;
+    }
+    /**
+     * Creates a shallow structural clone of this `ZContainer`, copying position,
+     * scale, rotation, alpha, visibility, and name. Direct children are cloned
+     * by type: `Phaser.GameObjects.Text`, `Phaser.GameObjects.Image`,
+     * `Phaser.GameObjects.NineSlice`, and any object that exposes its own `clone()` method.
+     */
+    clone() {
+        const newContainer = new ZContainer(this.scene, this.x, this.y);
+        newContainer.name = this.name;
+        newContainer.setScale(this.scaleX, this.scaleY);
+        newContainer.rotation = this.rotation;
+        newContainer.alpha = this.alpha;
+        newContainer.setVisible(this.visible);
+        for (const child of this.list) {
+            if (child instanceof Phaser.GameObjects.Text) {
+                const c = this.scene.add.text(child.x, child.y, child.text, child.style);
+                c.name = child.name;
+                c.setScale(child.scaleX, child.scaleY);
+                c.rotation = child.rotation;
+                c.alpha = child.alpha;
+                c.setOrigin(child.originX, child.originY);
+                newContainer.add(c);
+            }
+            else if (child instanceof Phaser.GameObjects.NineSlice) {
+                const c = this.scene.add.nineslice(child.x, child.y, child.texture.key, child.frame.name, child.width, child.height, child.leftWidth, child.rightWidth, child.topHeight, child.bottomHeight);
+                c.name = child.name;
+                c.setScale(child.scaleX, child.scaleY);
+                c.rotation = child.rotation;
+                c.alpha = child.alpha;
+                newContainer.add(c);
+            }
+            else if (child instanceof Phaser.GameObjects.Image) {
+                const c = this.scene.add.image(child.x, child.y, child.texture.key, child.frame.name);
+                c.name = child.name;
+                c.setScale(child.scaleX, child.scaleY);
+                c.rotation = child.rotation;
+                c.alpha = child.alpha;
+                c.setOrigin(child.originX, child.originY);
+                newContainer.add(c);
+            }
+            else if (child.clone) {
+                newContainer.add(child.clone());
+            }
+        }
+        return newContainer;
     }
     getAllOfType(type) {
         // Ensure `getType` is defined for ZContainer instances

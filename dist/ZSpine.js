@@ -93,8 +93,9 @@ export class ZSpine {
      * missing assets produce a console warning instead of a hard crash.
      */
     buildAndInjectAtlas(atlasKey, pngFiles, rawSkeleton, spinePlugin) {
-        const isWebGL = spinePlugin.isWebGL;
-        const gl = spinePlugin.gl;
+        const internal = spinePlugin;
+        const isWebGL = internal.isWebGL;
+        const gl = internal.gl;
         // Pass empty string — we override pages/regions immediately after
         const atlas = new TextureAtlas("");
         atlas.pages = [];
@@ -232,7 +233,7 @@ export class ZSpine {
         }
         if (fallbackPageAdded)
             atlas.pages.push(fallbackPage);
-        const atlasCache = spinePlugin.atlasCache;
+        const atlasCache = internal.atlasCache;
         if (atlasCache) {
             atlasCache.add(atlasKey, atlas);
         }
