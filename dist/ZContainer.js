@@ -307,42 +307,42 @@ export class ZContainer extends Phaser.GameObjects.Container {
     setX(value) {
         super.setX(value);
         if (this.currentTransform) {
-            this.currentTransform.x = value;
+            //  this.currentTransform.x = value!;
         }
         return this;
     }
     setY(value) {
         super.setY(value);
         if (this.currentTransform) {
-            this.currentTransform.y = value;
+            // this.currentTransform.y = value!;
         }
         return this;
     }
     setWidth(value) {
         super.setSize(value, this.height);
         if (this.currentTransform) {
-            this.currentTransform.width = value;
+            // this.currentTransform.width = value;
         }
         return this;
     }
     setHeight(value) {
         super.setSize(this.width, value);
         if (this.currentTransform) {
-            this.currentTransform.height = value;
+            // this.currentTransform.height = value;
         }
         return this;
     }
     setScaleX(x) {
         super.setScale(x, this.scaleY);
         if (this.currentTransform) {
-            this.currentTransform.scaleX = x;
+            // this.currentTransform.scaleX = x!;
         }
         return this;
     }
     setScaleY(y) {
         super.setScale(this.scaleX, y);
         if (this.currentTransform) {
-            this.currentTransform.scaleY = y;
+            // this.currentTransform.scaleY = y!;
         }
         return this;
     }
