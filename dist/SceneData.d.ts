@@ -60,6 +60,10 @@ export interface OrientationData {
         x: number;
         y: number;
     };
+    anchorLocalPercentage?: {
+        x: number;
+        y: number;
+    };
     width: number;
     height: number;
 }

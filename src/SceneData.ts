@@ -69,6 +69,7 @@ export interface OrientationData {
   isAnchored: boolean;
   anchorType?: AnchorConsts;
   anchorPercentage?: { x: number, y: number };
+  anchorLocalPercentage?: { x: number, y: number };
   width: number;
   height: number;
 }

@@ -417,16 +417,16 @@ export class ZContainer extends Phaser.GameObjects.Container {
 
     public applyAnchor() {
         if (this.currentTransform && this.currentTransform.isAnchored && this.parentContainer) {
-            let xPer = this.currentTransform!.anchorPercentage!.x || 0;
-            let yPer = this.currentTransform!.anchorPercentage!.y || 0;
-            let x = xPer * window.innerWidth;
-            let y = yPer * window.innerHeight;
-            const globalPoint = this.getWorldTransformMatrix().transformPoint(x, y);
+            let xPer = this.currentTransform.anchorPercentage?.x ?? 0;
+            let yPer = this.currentTransform.anchorPercentage?.y ?? 0;
+            let x = xPer * this.scene.scale.width;
+            let y = yPer * this.scene.scale.height;
+            // x, y are already in world/screen space — convert directly to parent-local space
             const mat = this.parentContainer.getWorldTransformMatrix();
             const inv = new Phaser.GameObjects.Components.TransformMatrix();
             inv.copyFrom(mat);
             inv.invert();
-            const localPoint = inv.transformPoint(globalPoint.x, globalPoint.y);
+            const localPoint = inv.transformPoint(x, y);
 
             this.x = localPoint.x;
             this.y = localPoint.y;
