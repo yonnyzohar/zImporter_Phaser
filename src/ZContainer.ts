@@ -90,7 +90,20 @@ export class ZContainer extends Phaser.GameObjects.Container {
         return result;
     }
 
-    init(): void { }
+    init(): void {
+        // Text field original size setup
+        const tf = this.getTextField();
+        if (tf) {
+            this.setFixedBoxSize(false);
+            this.originalTextWidth = tf.width;
+            this.originalTextHeight = tf.height;
+            this.originalFontSize = typeof tf.style.fontSize === 'number'
+                ? tf.style.fontSize
+                : tf.style.fontSize !== undefined
+                    ? parseFloat(tf.style.fontSize as string)
+                    : undefined;
+        }
+    }
 
     public getType(): string {
         return "ZContainer";
@@ -103,21 +116,13 @@ export class ZContainer extends Phaser.GameObjects.Container {
     public setText(text: string): void {
         let textChild = this.getTextField();
         if (textChild) {
-            textChild.setText(text);
-
-            if (this.fixedBoxSize) {
-                let maxWidth = this.originalTextWidth;
-                let maxHeight = this.originalTextHeight;
-                if ((maxWidth !== undefined && maxWidth > 0) || (maxHeight !== undefined && maxHeight > 0)) {
-                    while (
-                        (maxWidth !== undefined && textChild.width > maxWidth) ||
-                        (maxHeight !== undefined && textChild.height > maxHeight)
-                    ) {
-                        const currentSize = parseFloat(textChild.style.fontSize as string) || 12;
-                        textChild.setFontSize(currentSize - 1);
-                    }
-                }
+            // Reset to original font size before resizing, so repeated calls
+            // always start from full size (mirrors the PIXI version behaviour)
+            if (this.originalFontSize !== undefined) {
+                textChild.setFontSize(this.originalFontSize);
             }
+            textChild.setText(text);
+            this.resizeText(textChild);
 
             if (textChild.style.align === "center") {
                 textChild.setOrigin(0.5, 0.5);
