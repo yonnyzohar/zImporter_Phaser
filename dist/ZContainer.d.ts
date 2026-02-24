@@ -39,7 +39,7 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     setText(text: string): void;
     setTextStyle(data: Partial<Phaser.Types.GameObjects.Text.TextStyle>): void;
     private resizeText;
-    getTextField(): Phaser.GameObjects.Text | null;
+    getTextField(): Phaser.GameObjects.Text | Phaser.GameObjects.BitmapText | null;
     setInstanceData(data: InstanceData, orientation: string): void;
     setFixedBoxSize(value: boolean): void;
     set fitToScreen(value: boolean);
@@ -55,6 +55,18 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
      */
     _setDisplayX(value: number): void;
     _setDisplayY(value: number): void;
+    /**
+     * Returns the logical x position as set via setX() / currentTransform.x.
+     * Unlike the Phaser `.x` getter (which returns the display position adjusted
+     * for the parent's pivot), this always reflects the authored coordinate.
+     */
+    getX(): number;
+    /**
+     * Returns the logical y position as set via setY() / currentTransform.y.
+     * Unlike the Phaser `.y` getter (which returns the display position adjusted
+     * for the parent's pivot), this always reflects the authored coordinate.
+     */
+    getY(): number;
     /**
      * Sets the logical x position, saves it to `currentTransform.x` (mirroring
      * the PIXI pattern), and applies the parent-pivot correction so the display

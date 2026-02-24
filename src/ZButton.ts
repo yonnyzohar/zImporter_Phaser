@@ -276,7 +276,7 @@ export class ZButton extends ZContainer {
         });
     }
 
-    public getLabel(): Phaser.GameObjects.Text | null {
+    public getLabel(): Phaser.GameObjects.Text | Phaser.GameObjects.BitmapText | null {
         if (this.labelState === "single" && this.topLabelContainer) {
             return this.topLabelContainer.getTextField();
         } else if (this.labelState === "multi" && this.upLabelContainer) {
@@ -285,7 +285,7 @@ export class ZButton extends ZContainer {
         return null;
     }
 
-    public getLabel2(): Phaser.GameObjects.Text | null {
+    public getLabel2(): Phaser.GameObjects.Text | Phaser.GameObjects.BitmapText | null {
         if (this.labelState === "single" && this.topLabelContainer2) {
             return this.topLabelContainer2.getTextField();
         } else if (this.labelState === "multi" && this.upLabelContainer2) {

@@ -97,11 +97,11 @@ export class ZContainer extends Phaser.GameObjects.Container {
             this.setFixedBoxSize(false);
             this.originalTextWidth = tf.width;
             this.originalTextHeight = tf.height;
-            this.originalFontSize = typeof tf.style.fontSize === 'number'
-                ? tf.style.fontSize
-                : tf.style.fontSize !== undefined
-                    ? parseFloat(tf.style.fontSize as string)
-                    : undefined;
+            // Phaser stores fontSize as a string e.g. "24px"
+            if (tf instanceof Phaser.GameObjects.Text) {
+                const fs = tf.style?.fontSize;
+                this.originalFontSize = fs !== undefined ? parseFloat(fs as string) : undefined;
+            }
         }
     }
 
@@ -124,21 +124,23 @@ export class ZContainer extends Phaser.GameObjects.Container {
             textChild.setText(text);
             this.resizeText(textChild);
 
-            if (textChild.style.align === "center") {
-                textChild.setOrigin(0.5, 0.5);
-            }
+            //if (textChild.style?.align === "center") {
+            //    textChild.setOrigin(0.5, 0.5);
+            //}
         }
     }
 
     public setTextStyle(data: Partial<Phaser.Types.GameObjects.Text.TextStyle>): void {
         let tf = this.getTextField();
         if (tf) {
-            tf.setStyle(data);
-            this.resizeText(tf);
+            if (tf instanceof Phaser.GameObjects.Text) {
+                tf.setStyle(data);
+                this.resizeText(tf);
+            }
         }
     }
 
-    private resizeText(textChild: Phaser.GameObjects.Text): void {
+    private resizeText(textChild: Phaser.GameObjects.Text | Phaser.GameObjects.BitmapText): void {
         if (this.fixedBoxSize) {
             let maxWidth = this.originalTextWidth;
             let maxHeight = this.originalTextHeight;
@@ -147,20 +149,23 @@ export class ZContainer extends Phaser.GameObjects.Container {
                     (maxWidth !== undefined && textChild.width > maxWidth) ||
                     (maxHeight !== undefined && textChild.height > maxHeight)
                 ) {
-                    const currentSize = parseFloat(textChild.style.fontSize as string) || 12;
-                    if (currentSize <= 1) break;
-                    textChild.setFontSize(currentSize - 1);
+                    if (textChild instanceof Phaser.GameObjects.Text) {
+                        const currentSize = parseFloat(textChild.style?.fontSize as string) || 12;
+                        if (currentSize <= 1) break;
+                        textChild.setFontSize(currentSize - 1);
+                    }
                 }
             }
         }
     }
 
-    public getTextField(): Phaser.GameObjects.Text | null {
-        let textChild = this.getByName("label") as Phaser.GameObjects.Text;
-        if (textChild) return textChild;
+    public getTextField(): Phaser.GameObjects.Text | Phaser.GameObjects.BitmapText | null {
+        const byName = this.getByName("label");
+        if (byName instanceof Phaser.GameObjects.BitmapText) return byName;
+        if (byName instanceof Phaser.GameObjects.Text) return byName;
 
         for (let child of this.list) {
-            if (child instanceof Phaser.GameObjects.Text) {
+            if (child instanceof Phaser.GameObjects.Text || child instanceof Phaser.GameObjects.BitmapText) {
                 return child;
             }
         }
@@ -185,11 +190,11 @@ export class ZContainer extends Phaser.GameObjects.Container {
             this.setFixedBoxSize(false);
             this.originalTextWidth = tf.width;
             this.originalTextHeight = tf.height;
-            this.originalFontSize = typeof tf.style.fontSize === 'number'
-                ? tf.style.fontSize
-                : tf.style.fontSize !== undefined
-                    ? parseFloat(tf.style.fontSize as string)
-                    : undefined;
+            // Phaser stores fontSize as a string e.g. "24px"
+            if (tf instanceof Phaser.GameObjects.Text) {
+                const fs = tf.style?.fontSize;
+                this.originalFontSize = fs !== undefined ? parseFloat(fs as string) : undefined;
+            }
         }
     }
 
@@ -391,6 +396,24 @@ export class ZContainer extends Phaser.GameObjects.Container {
     }
 
     /**
+     * Returns the logical x position as set via setX() / currentTransform.x.
+     * Unlike the Phaser `.x` getter (which returns the display position adjusted
+     * for the parent's pivot), this always reflects the authored coordinate.
+     */
+    public getX(): number {
+        return this.currentTransform?.x ?? this.x;
+    }
+
+    /**
+     * Returns the logical y position as set via setY() / currentTransform.y.
+     * Unlike the Phaser `.y` getter (which returns the display position adjusted
+     * for the parent's pivot), this always reflects the authored coordinate.
+     */
+    public getY(): number {
+        return this.currentTransform?.y ?? this.y;
+    }
+
+    /**
      * Sets the logical x position, saves it to `currentTransform.x` (mirroring
      * the PIXI pattern), and applies the parent-pivot correction so the display
      * position is consistent.
@@ -497,7 +520,10 @@ export class ZContainer extends Phaser.GameObjects.Container {
     public getTextStyle(): Phaser.Types.GameObjects.Text.TextStyle | null {
         const tf = this.getTextField();
         if (!tf) return null;
-        return tf.style as unknown as Phaser.Types.GameObjects.Text.TextStyle;
+        if (tf instanceof Phaser.GameObjects.Text) {
+            return tf.style as unknown as Phaser.Types.GameObjects.Text.TextStyle;
+        }
+        return null;
     }
 
     /**

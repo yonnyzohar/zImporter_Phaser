@@ -30,8 +30,8 @@ export declare class ZButton extends ZContainer {
     setLabel2(name: string): void;
     setFixedTextSize(fixed: boolean): void;
     makeSingleLine(): void;
-    getLabel(): Phaser.GameObjects.Text | null;
-    getLabel2(): Phaser.GameObjects.Text | null;
+    getLabel(): Phaser.GameObjects.Text | Phaser.GameObjects.BitmapText | null;
+    getLabel2(): Phaser.GameObjects.Text | Phaser.GameObjects.BitmapText | null;
     hasLabel(): boolean;
     hasLabel2(): boolean;
     setCallback(func: () => void): void;
