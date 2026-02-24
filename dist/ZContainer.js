@@ -187,12 +187,13 @@ export class ZContainer extends Phaser.GameObjects.Container {
         if (parentContainer && parentContainer.currentTransform) {
             let parentPivotX = parentContainer.currentTransform.pivotX || 0;
             let parentPivotY = parentContainer.currentTransform.pivotY || 0;
-            this.setX((this.currentTransform.x - parentPivotX) || 0);
-            this.setY((this.currentTransform.y - parentPivotY) || 0);
+            // Use super directly — we must NOT write back into currentTransform here
+            super.setX((this.currentTransform.x - parentPivotX) || 0);
+            super.setY((this.currentTransform.y - parentPivotY) || 0);
         }
         else {
-            this.setX(this.currentTransform.x || 0);
-            this.setY(this.currentTransform.y || 0);
+            super.setX(this.currentTransform.x || 0);
+            super.setY(this.currentTransform.y || 0);
         }
         this.rotation = this.currentTransform.rotation || 0;
         this.alpha = this.currentTransform.alpha ?? 1;
@@ -226,12 +227,21 @@ export class ZContainer extends Phaser.GameObjects.Container {
                 return;
             let childTransform = child.currentTransform;
             if (childTransform) {
-                child.setX(childTransform.x - pivotX);
-                child.setY(childTransform.y - pivotY);
+                // Use _setDisplayX/Y to bypass the logical-save override on ZContainer children
+                if (child._setDisplayX) {
+                    child._setDisplayX(childTransform.x - pivotX);
+                    child._setDisplayY(childTransform.y - pivotY);
+                }
+                else {
+                    child.x = childTransform.x - pivotX;
+                    child.y = childTransform.y - pivotY;
+                }
             }
             else {
-                child.setX(-pivotX);
-                child.setY(-pivotY);
+                if (!(child instanceof ZContainer)) {
+                    child.setX(-pivotX);
+                    child.setY(-pivotY);
+                }
             }
         });
     }
@@ -304,18 +314,37 @@ export class ZContainer extends Phaser.GameObjects.Container {
         this.y = mid.y - (minY + localContentH / 2) * scale;
     }
     /**/
-    setX(value) {
+    /**
+     * Internal helper — sets the raw Phaser display position without touching
+     * `currentTransform`. Used by `setOrigin` and `applyTransform` to avoid
+     * corrupting the logical (editor) x/y stored in the transform.
+     */
+    _setDisplayX(value) {
         super.setX(value);
-        if (this.currentTransform) {
-            //  this.currentTransform.x = value!;
+    }
+    _setDisplayY(value) {
+        super.setY(value);
+    }
+    /**
+     * Sets the logical x position, saves it to `currentTransform.x` (mirroring
+     * the PIXI pattern), and applies the parent-pivot correction so the display
+     * position is consistent.
+     */
+    setX(value) {
+        if (this.currentTransform && value !== undefined) {
+            this.currentTransform.x = value;
         }
+        // Compute the display position the same way applyTransform would
+        const parentPivotX = this.parentContainer?.currentTransform?.pivotX || 0;
+        super.setX(((value ?? 0) - parentPivotX) || 0);
         return this;
     }
     setY(value) {
-        super.setY(value);
-        if (this.currentTransform) {
-            // this.currentTransform.y = value!;
+        if (this.currentTransform && value !== undefined) {
+            this.currentTransform.y = value;
         }
+        const parentPivotY = this.parentContainer?.currentTransform?.pivotY || 0;
+        super.setY(((value ?? 0) - parentPivotY) || 0);
         return this;
     }
     setWidth(value) {

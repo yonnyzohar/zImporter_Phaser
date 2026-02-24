@@ -48,6 +48,18 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     setOrigin(): void;
     resize(width: number, height: number, orientation: "portrait" | "landscape"): void;
     executeFitToScreen(): void;
+    /**
+     * Internal helper — sets the raw Phaser display position without touching
+     * `currentTransform`. Used by `setOrigin` and `applyTransform` to avoid
+     * corrupting the logical (editor) x/y stored in the transform.
+     */
+    _setDisplayX(value: number): void;
+    _setDisplayY(value: number): void;
+    /**
+     * Sets the logical x position, saves it to `currentTransform.x` (mirroring
+     * the PIXI pattern), and applies the parent-pivot correction so the display
+     * position is consistent.
+     */
     setX(value?: number | undefined): this;
     setY(value?: number | undefined): this;
     setWidth(value: number): this;
