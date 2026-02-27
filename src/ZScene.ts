@@ -284,14 +284,14 @@ export class ZScene {
     return baseHeight;
   }
 
-  async load(assetBasePath: string, _loadCompleteFnctn: Function) {
+  async load(assetBasePath: string, _loadCompleteFnctn: Function, _updateLoadProgressFnctn?: Function) {
     this._sceneStage = new ZContainer(this.phaserScene); // Will be added to scene later
     this.assetBasePath = assetBasePath;
     const placementsUrl = assetBasePath + "placements.json?rnd=" + Math.random();
     try {
       const response = await fetch(placementsUrl);
       const placementsObj = await response.json();
-      this.loadAssets(assetBasePath, placementsObj, _loadCompleteFnctn);
+      this.loadAssets(assetBasePath, placementsObj, _loadCompleteFnctn, _updateLoadProgressFnctn);
     } catch (err) {
       console.error("Failed to load placements:", err);
     }
@@ -303,11 +303,13 @@ export class ZScene {
    * @param assetBasePath - The base path for assets.
    * @param placemenisObj - The placements object describing the scene.
    * @param _loadCompleteFnctn - Callback function to invoke when loading is complete.
+   * @param _updateLoadProgressFnctn - Optional callback function to update load progress.
    */
   async loadAssets(
     assetBasePath: string,
     placementsObj: SceneData,
-    _loadCompleteFnctn: Function
+    _loadCompleteFnctn: Function,
+    _updateLoadProgressFnctn?: Function
   ) {
     const isAtlas = (placementsObj as any).atlas ?? true; // default to true for backward compatibility
     this.usesAtlas = !!isAtlas;
@@ -329,6 +331,13 @@ export class ZScene {
       this.phaserScene.load.once('loaderror', (file: any) => {
         //console.error('Load error:', file.key, file.url, file.error);
       });
+
+
+      if (_updateLoadProgressFnctn) {
+        this.phaserScene.load.on('progress', (progress: number) => {
+          _updateLoadProgressFnctn(progress);
+        });
+      }
 
       this.phaserScene.load.atlas(atlasKey, atlasImageUrl, atlasJsonUrl);
 
@@ -356,6 +365,12 @@ export class ZScene {
       return;
     }
 
+    if (_updateLoadProgressFnctn) {
+      this.phaserScene.load.on('progress', (progress: number) => {
+        _updateLoadProgressFnctn(progress);
+      });
+    }
+
     // Non-atlas mode: load individual images derived from templates
     const images = this.createImagesObject(assetBasePath, placementsObj);
     images.forEach(img => {
@@ -364,6 +379,7 @@ export class ZScene {
         this.phaserScene.load.image(img.alias, img.src);
       }
     });
+
 
     // Load bitmap fonts if provided (expects .png and .fnt next to each other)
     if ((placementsObj as any).fonts && (placementsObj as any).fonts.length > 0) {

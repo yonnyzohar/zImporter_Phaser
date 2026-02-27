@@ -251,14 +251,14 @@ export class ZScene {
         }
         return baseHeight;
     }
-    async load(assetBasePath, _loadCompleteFnctn) {
+    async load(assetBasePath, _loadCompleteFnctn, _updateLoadProgressFnctn) {
         this._sceneStage = new ZContainer(this.phaserScene); // Will be added to scene later
         this.assetBasePath = assetBasePath;
         const placementsUrl = assetBasePath + "placements.json?rnd=" + Math.random();
         try {
             const response = await fetch(placementsUrl);
             const placementsObj = await response.json();
-            this.loadAssets(assetBasePath, placementsObj, _loadCompleteFnctn);
+            this.loadAssets(assetBasePath, placementsObj, _loadCompleteFnctn, _updateLoadProgressFnctn);
         }
         catch (err) {
             console.error("Failed to load placements:", err);
@@ -269,8 +269,9 @@ export class ZScene {
      * @param assetBasePath - The base path for assets.
      * @param placemenisObj - The placements object describing the scene.
      * @param _loadCompleteFnctn - Callback function to invoke when loading is complete.
+     * @param _updateLoadProgressFnctn - Optional callback function to update load progress.
      */
-    async loadAssets(assetBasePath, placementsObj, _loadCompleteFnctn) {
+    async loadAssets(assetBasePath, placementsObj, _loadCompleteFnctn, _updateLoadProgressFnctn) {
         const isAtlas = placementsObj.atlas ?? true; // default to true for backward compatibility
         this.usesAtlas = !!isAtlas;
         if (isAtlas) {
@@ -287,6 +288,11 @@ export class ZScene {
             this.phaserScene.load.once('loaderror', (file) => {
                 //console.error('Load error:', file.key, file.url, file.error);
             });
+            if (_updateLoadProgressFnctn) {
+                this.phaserScene.load.on('progress', (progress) => {
+                    _updateLoadProgressFnctn(progress);
+                });
+            }
             this.phaserScene.load.atlas(atlasKey, atlasImageUrl, atlasJsonUrl);
             this.phaserScene.load.once('complete', () => {
                 const texture = this.phaserScene.textures.get(atlasKey);
@@ -306,6 +312,11 @@ export class ZScene {
             });
             this.phaserScene.load.start();
             return;
+        }
+        if (_updateLoadProgressFnctn) {
+            this.phaserScene.load.on('progress', (progress) => {
+                _updateLoadProgressFnctn(progress);
+            });
         }
         // Non-atlas mode: load individual images derived from templates
         const images = this.createImagesObject(assetBasePath, placementsObj);

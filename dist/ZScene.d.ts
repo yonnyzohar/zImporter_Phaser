@@ -59,14 +59,15 @@ export declare class ZScene {
     resize(width: number, height: number): void;
     get sceneWidth(): number;
     get sceneHeight(): number;
-    load(assetBasePath: string, _loadCompleteFnctn: Function): Promise<void>;
+    load(assetBasePath: string, _loadCompleteFnctn: Function, _updateLoadProgressFnctn?: Function): Promise<void>;
     /**
      * Loads the scene's assets and fonts, then initializes the scene.
      * @param assetBasePath - The base path for assets.
      * @param placemenisObj - The placements object describing the scene.
      * @param _loadCompleteFnctn - Callback function to invoke when loading is complete.
+     * @param _updateLoadProgressFnctn - Optional callback function to update load progress.
      */
-    loadAssets(assetBasePath: string, placementsObj: SceneData, _loadCompleteFnctn: Function): Promise<void>;
+    loadAssets(assetBasePath: string, placementsObj: SceneData, _loadCompleteFnctn: Function, _updateLoadProgressFnctn?: Function): Promise<void>;
     initScene(_placementsObj: SceneData): void;
     static getAssetType(value: string): any;
     static isAssetType(value: string): value is AssetType;
