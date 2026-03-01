@@ -845,7 +845,7 @@ export class ZScene {
       // bone.worldX/Y is in spine skeleton-local space; add the SpineGameObject's
       // own position in the parent container to get parent-local coordinates.
       child.x = spineObj.x + bone.worldX + offsetX;
-      child.y = spineObj.y + bone.worldY + offsetY;
+      child.y = spineObj.y + bone.worldY - offsetY;
     };
 
     this.phaserScene.events.on(Phaser.Scenes.Events.PRE_RENDER, syncPosition);
