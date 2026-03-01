@@ -759,6 +759,9 @@ export class ZScene {
         child.name = instanceData.instanceName;
         child.setInstanceData(instanceData, this.orientation);
         parent.add(child);
+        // Spine's Y axis is flipped relative to Phaser/screen space. PIXI-Spine
+        // handles this via scale.y = -1 on the slot containers; we replicate that here.
+        child.scaleY *= -1;
         // Capture the child's initial local offset (from setInstanceData) so we can
         // keep it relative to the slot bone position rather than replacing it.
         const offsetX = child.x;
@@ -771,7 +774,7 @@ export class ZScene {
             // bone.worldX/Y is in spine skeleton-local space; add the SpineGameObject's
             // own position in the parent container to get parent-local coordinates.
             child.x = spineObj.x + bone.worldX + offsetX;
-            child.y = spineObj.y + bone.worldY + offsetY;
+            child.y = spineObj.y + bone.worldY - offsetY;
         };
         this.phaserScene.events.on(Phaser.Scenes.Events.PRE_RENDER, syncPosition);
     }
