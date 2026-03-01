@@ -829,6 +829,10 @@ export class ZScene {
     child.setInstanceData(instanceData, this.orientation);
     parent.add(child);
 
+    // Spine's Y axis is flipped relative to Phaser/screen space. PIXI-Spine
+    // handles this via scale.y = -1 on the slot containers; we replicate that here.
+    child.scaleY *= -1;
+
     // Capture the child's initial local offset (from setInstanceData) so we can
     // keep it relative to the slot bone position rather than replacing it.
     const offsetX = child.x;
