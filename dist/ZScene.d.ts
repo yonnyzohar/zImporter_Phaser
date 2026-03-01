@@ -75,6 +75,23 @@ export declare class ZScene {
     getChildrenFrames(_templateName: string): Record<string, AnimTrackData[]>;
     createAsset(mc: ZContainer, baseNode: TemplateData): Promise<void>;
     /**
+     * Instantiates a ZContainer described by `assetData` and attaches it to a
+     * Spine slot, tracking the slot bone's world position each pre-render tick.
+     *
+     * In PIXI-Spine the equivalent is `spine.slotContainers[i].addChild(child)`.
+     * Phaser's spine plugin has no per-slot display containers, so instead we:
+     *  1. Spawn the child and add it to the same parent container as the spine.
+     *  2. Register a PRE_RENDER listener that reads `slot.bone.worldX/Y` (which
+     *     are in the skeleton's local space, aligned with the SpineGameObject's
+     *     position in its parent) and offsets the child by the instance data's
+     *     own initial position (set via `setInstanceData`).
+     *
+     * @param attachment - The slot attachment descriptor from `SpineData`.
+     * @param spineObj   - The Phaser `SpineGameObject` that owns the slot.
+     * @param parent     - The `ZContainer` that will hold the spawned child.
+     */
+    private addSpineSlotAttachment;
+    /**
      * Build a list of unique images to load when not using an atlas.
      * Mirrors the PIXI variant's behavior.
      */

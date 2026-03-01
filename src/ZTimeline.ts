@@ -1,6 +1,7 @@
 import { ZCuePointsManager } from "./ZCuePointsManager";
 import { ZContainer } from "./ZContainer";
 import { ZUpdatables } from "./ZUpdatables";
+import { InstanceData } from "./SceneData";
 
 /**
  * Represents a timeline container that manages frame-based animations for its children.
@@ -37,6 +38,13 @@ export class ZTimeline extends ZContainer {
         this._frames;
         this.currentFrame = 0;
         this.looping = true;
+    }
+
+    public setInstanceData(data: InstanceData, orientation: string): void {
+        super.setInstanceData(data, orientation);
+        if (data.playOnStart) {
+            this.play();
+        }
     }
 
     setCuePoints(cuePoints: Record<number, string>): void {

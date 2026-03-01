@@ -764,6 +764,13 @@ export class ZScene {
             spineObj.setName(spineData.name || childNode.name);
             mc.add(spineObj);
             (mc as any)[childNode.name] = spineObj;
+            // Handle slot attachments — spawn children and track their positions
+            // against the corresponding spine slot's bone each frame.
+            if (spineData.slotAttachments && spineData.slotAttachments.length > 0) {
+              for (const attachment of spineData.slotAttachments) {
+                this.addSpineSlotAttachment(attachment, spineObj, mc);
+              }
+            }
             // Trigger a full resize so the spine (not in resizeMap itself) gets
             // correctly positioned by its parent container's setOrigin() call.
             // mc.applyTransform() alone is insufficient — it doesn't re-run the
@@ -789,6 +796,55 @@ export class ZScene {
 
       asset?.init?.();
     }
+  }
+
+  /**
+   * Instantiates a ZContainer described by `assetData` and attaches it to a
+   * Spine slot, tracking the slot bone's world position each pre-render tick.
+   *
+   * In PIXI-Spine the equivalent is `spine.slotContainers[i].addChild(child)`.
+   * Phaser's spine plugin has no per-slot display containers, so instead we:
+   *  1. Spawn the child and add it to the same parent container as the spine.
+   *  2. Register a PRE_RENDER listener that reads `slot.bone.worldX/Y` (which
+   *     are in the skeleton's local space, aligned with the SpineGameObject's
+   *     position in its parent) and offsets the child by the instance data's
+   *     own initial position (set via `setInstanceData`).
+   *
+   * @param attachment - The slot attachment descriptor from `SpineData`.
+   * @param spineObj   - The Phaser `SpineGameObject` that owns the slot.
+   * @param parent     - The `ZContainer` that will hold the spawned child.
+   */
+  private addSpineSlotAttachment(
+    attachment: { slotName: string; assetName: string; assetData: BaseAssetData },
+    spineObj: SpineGameObject,
+    parent: ZContainer
+  ): void {
+    const instanceData = attachment.assetData as InstanceData;
+    const child = this.spawn(instanceData.name);
+    if (!child) {
+      console.warn(`ZScene: addSpineSlotAttachment — template "${instanceData.name}" not found`);
+      return;
+    }
+    child.name = instanceData.instanceName;
+    child.setInstanceData(instanceData, this.orientation);
+    parent.add(child);
+
+    // Capture the child's initial local offset (from setInstanceData) so we can
+    // keep it relative to the slot bone position rather than replacing it.
+    const offsetX = child.x;
+    const offsetY = child.y;
+
+    const syncPosition = () => {
+      const slot = spineObj.skeleton.findSlot(attachment.slotName);
+      if (!slot) return;
+      const bone = slot.bone;
+      // bone.worldX/Y is in spine skeleton-local space; add the SpineGameObject's
+      // own position in the parent container to get parent-local coordinates.
+      child.x = spineObj.x + bone.worldX + offsetX;
+      child.y = spineObj.y + bone.worldY + offsetY;
+    };
+
+    this.phaserScene.events.on(Phaser.Scenes.Events.PRE_RENDER, syncPosition);
   }
 
   /**

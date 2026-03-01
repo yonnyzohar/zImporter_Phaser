@@ -1,4 +1,5 @@
 import { ZContainer } from "./ZContainer";
+import { InstanceData } from "./SceneData";
 /**
  * Represents a timeline container that manages frame-based animations for its children.
  * Extends `ZContainer` and provides methods to control playback, frame navigation, and event listeners.
@@ -28,6 +29,7 @@ export declare class ZTimeline extends ZContainer {
     cuePoints: Record<number, string>;
     func: ((self: ZTimeline) => void) | undefined;
     constructor(scene: Phaser.Scene, x?: number, y?: number, children?: Phaser.GameObjects.GameObject[]);
+    setInstanceData(data: InstanceData, orientation: string): void;
     setCuePoints(cuePoints: Record<number, string>): void;
     getFrames(): any;
     setFrames(value: any): void;

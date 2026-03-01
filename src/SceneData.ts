@@ -92,6 +92,7 @@ export interface InstanceData extends BaseAssetData {
   portrait: OrientationData;
   landscape: OrientationData;
   attrs?: InstanceAttributes;
+  playOnStart?: boolean;
 
 }
 
@@ -106,6 +107,7 @@ export interface SpineData extends BaseAssetData {
     value: boolean;
     animation: string;
   };
+  slotAttachments?: Array<{ slotName: string; assetName: string; assetData: BaseAssetData }>;
 };
 
 export interface ParticleData extends BaseAssetData {
