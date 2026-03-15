@@ -28,10 +28,58 @@ export class ZContainer extends Phaser.GameObjects.Container {
     fixedBoxSize?: boolean;
     _props?: any;
     private graphics?: Phaser.GameObjects.Graphics;
+    _flashSkewX: number | undefined;
+    _flashSkewY: number | undefined;
 
     constructor(scene: Phaser.Scene, x = 0, y = 0, children?: Phaser.GameObjects.GameObject[]) {
         super(scene, x, y, children);
         scene.add.existing(this);
+
+        // Patch localTransform to support Flash-style skew.
+        // Phaser's Container renderer calls either applyITRS (root level) or
+        // translate+rotate+scale (nested). We intercept both to inject skew.
+        const lt = this.localTransform as any;
+        const self = this;
+        const origApplyITRS = lt.applyITRS.bind(lt);
+        const origScale = lt.scale.bind(lt);
+
+        lt.applyITRS = function (x: number, y: number, rotation: number, scaleX: number, scaleY: number) {
+            origApplyITRS(x, y, rotation, scaleX, scaleY);
+            const flashSkewX = self._flashSkewX;
+            const flashSkewY = self._flashSkewY;
+            if (flashSkewX !== undefined || flashSkewY !== undefined) {
+                const skewX = flashSkewX ?? rotation;
+                const skewY = flashSkewY ?? rotation;
+                const m = lt.matrix;
+                m[0] = Math.cos(skewY) * scaleX;
+                m[1] = Math.sin(skewY) * scaleX;
+                m[2] = -Math.sin(skewX) * scaleY;
+                m[3] = Math.cos(skewX) * scaleY;
+            }
+            return lt;
+        };
+
+        lt.scale = function (sx: number, sy: number) {
+            origScale(sx, sy);
+            const flashSkewX = self._flashSkewX;
+            const flashSkewY = self._flashSkewY;
+            if ((flashSkewX !== undefined || flashSkewY !== undefined) && sx !== 0 && sy !== 0) {
+                const r = self.rotation;
+                const skewX = flashSkewX ?? r;
+                const skewY = flashSkewY ?? r;
+                const dry = r - skewY;
+                const drx = r - skewX;
+                const k_xy = sx / sy;
+                const k_yx = sy / sx;
+                const m = lt.matrix;
+                const A = m[0], B = m[1], C = m[2], D = m[3];
+                m[0] = A * Math.cos(dry) - C * k_xy * Math.sin(dry);
+                m[1] = B * Math.cos(dry) - D * k_xy * Math.sin(dry);
+                m[2] = A * k_yx * Math.sin(drx) + C * Math.cos(drx);
+                m[3] = B * k_yx * Math.sin(drx) + D * Math.cos(drx);
+            }
+            return lt;
+        };
     }/**/
 
     getChildByName(name: string): Phaser.GameObjects.GameObject | null {
@@ -247,6 +295,19 @@ export class ZContainer extends Phaser.GameObjects.Container {
         this.rotation = this.currentTransform.rotation || 0;
         this.alpha = this.currentTransform.alpha ?? 1;
         this.setScale(this.currentTransform.scaleX || 1, this.currentTransform.scaleY || 1);
+
+        // Apply Flash-style skew. Store raw Flash skew values; the localTransform
+        // patch in the constructor converts them to the correct matrix each frame.
+        if (this.currentTransform.skewY !== undefined) {
+            this._flashSkewY = this.currentTransform.skewY;
+        } else {
+            this._flashSkewY = undefined;
+        }
+        if (this.currentTransform.skewX !== undefined) {
+            this._flashSkewX = this.currentTransform.skewX;
+        } else {
+            this._flashSkewX = undefined;
+        }
 
         // Handle pivot - Phaser Containers don't have pivot, so we adjust children positions
         // This mimics PIXI's pivot behavior

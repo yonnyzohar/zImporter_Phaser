@@ -172,6 +172,14 @@ export class ZTimeline extends ZContainer {
                         if (frame.rotation !== undefined) {
                             child.rotation = frame.rotation;
                         }
+                        // Apply Flash-style skew using the raw Flash skewY / skewX values.
+                        // The ZContainer localTransform patch converts these to the correct matrix.
+                        if (frame.skewY !== undefined) {
+                            child._flashSkewY = frame.skewY;
+                        }
+                        if (frame.skewX !== undefined) {
+                            child._flashSkewX = frame.skewX;
+                        }
                         // Re-apply pivot simulation for ZContainer children so their
                         // own children are repositioned when pivot changes.
                         if ((frame.pivotX !== undefined || frame.pivotY !== undefined) &&
