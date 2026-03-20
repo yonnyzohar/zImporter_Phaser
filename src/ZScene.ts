@@ -32,6 +32,7 @@ export class ZScene {
   private _sceneStage!: ZContainer;
   private data: SceneData;
   private scene?: Phaser.Textures.Texture;
+  private _imageAliases: string[] | null = null;
   private resizeMap: Map<ZContainer | ZNineSlice, boolean> = new Map();
   private static Map: Map<string, ZScene> = new Map();
   private sceneId: string;
@@ -52,19 +53,23 @@ export class ZScene {
    * Destroys the scene and its assets, freeing resources.
    */
   async destroy(): Promise<void> {
-    // Remove all children from the stage
-    if (this._sceneStage) {
-      this._sceneStage.removeAll(true);
-      if (this._sceneStage.scene) {
-        this._sceneStage.scene.children.remove(this._sceneStage);
+    if (this.usesAtlas) {
+      // Atlas scene: remove the atlas texture
+      if (this.sceneName && this.phaserScene.textures.exists(this.sceneName)) {
+        this.phaserScene.textures.remove(this.sceneName);
       }
+    } else if (this._imageAliases) {
+      // Non-atlas scene: remove each individually loaded texture
+      for (const alias of this._imageAliases) {
+        if (this.phaserScene.textures.exists(alias)) {
+          this.phaserScene.textures.remove(alias);
+        }
+      }
+      this._imageAliases = null;
     }
-    // Remove textures if loaded
-    if (this.sceneName && this.phaserScene.textures.exists(this.sceneName)) {
-      this.phaserScene.textures.remove(this.sceneName);
-    }
-    // Optionally clear bitmap fonts
-    // (Phaser does not provide a direct API to remove bitmap fonts, but you can clear cache if needed)
+    this.scene = undefined;
+    this._sceneStage.destroy();
+    this.resizeMap.clear();
   }
 
   /**
@@ -373,6 +378,8 @@ export class ZScene {
 
     // Non-atlas mode: load individual images derived from templates
     const images = this.createImagesObject(assetBasePath, placementsObj);
+    // Track aliases for proper cleanup on destroy
+    this._imageAliases = images.map(img => img.alias);
     images.forEach(img => {
       // Avoid duplicate keys
       if (!this.phaserScene.textures.exists(img.alias)) {

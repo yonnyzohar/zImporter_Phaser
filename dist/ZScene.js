@@ -25,6 +25,7 @@ export class ZScene {
     _sceneStage;
     data;
     scene;
+    _imageAliases = null;
     resizeMap = new Map();
     static Map = new Map();
     sceneId;
@@ -42,19 +43,24 @@ export class ZScene {
      * Destroys the scene and its assets, freeing resources.
      */
     async destroy() {
-        // Remove all children from the stage
-        if (this._sceneStage) {
-            this._sceneStage.removeAll(true);
-            if (this._sceneStage.scene) {
-                this._sceneStage.scene.children.remove(this._sceneStage);
+        if (this.usesAtlas) {
+            // Atlas scene: remove the atlas texture
+            if (this.sceneName && this.phaserScene.textures.exists(this.sceneName)) {
+                this.phaserScene.textures.remove(this.sceneName);
             }
         }
-        // Remove textures if loaded
-        if (this.sceneName && this.phaserScene.textures.exists(this.sceneName)) {
-            this.phaserScene.textures.remove(this.sceneName);
+        else if (this._imageAliases) {
+            // Non-atlas scene: remove each individually loaded texture
+            for (const alias of this._imageAliases) {
+                if (this.phaserScene.textures.exists(alias)) {
+                    this.phaserScene.textures.remove(alias);
+                }
+            }
+            this._imageAliases = null;
         }
-        // Optionally clear bitmap fonts
-        // (Phaser does not provide a direct API to remove bitmap fonts, but you can clear cache if needed)
+        this.scene = undefined;
+        this._sceneStage.destroy();
+        this.resizeMap.clear();
     }
     /**
      * Loads a bitmap font from XML and creates a bitmap text object.
@@ -321,6 +327,8 @@ export class ZScene {
         }
         // Non-atlas mode: load individual images derived from templates
         const images = this.createImagesObject(assetBasePath, placementsObj);
+        // Track aliases for proper cleanup on destroy
+        this._imageAliases = images.map(img => img.alias);
         images.forEach(img => {
             // Avoid duplicate keys
             if (!this.phaserScene.textures.exists(img.alias)) {

@@ -9,6 +9,7 @@ export declare class ZScene {
     private _sceneStage;
     private data;
     private scene?;
+    private _imageAliases;
     private resizeMap;
     private static Map;
     private sceneId;

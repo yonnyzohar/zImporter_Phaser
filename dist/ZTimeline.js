@@ -112,6 +112,11 @@ export class ZTimeline extends ZContainer {
             }
         }
     }
+    destroy() {
+        this.stop();
+        ZUpdatables.removeUpdateAble(this);
+        super.destroy();
+    }
     //this code goes over all the child timlines and set the transform of the child at the current frame
     gotoAndStop(frameNum) {
         this.currentFrame = frameNum;

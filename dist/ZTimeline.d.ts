@@ -39,6 +39,7 @@ export declare class ZTimeline extends ZContainer {
     stop(): void;
     gotoAndPlay(frameNum: number): void;
     update(): void;
+    destroy(): void;
     gotoAndStop(frameNum: number): void;
 }
 //# sourceMappingURL=ZTimeline.d.ts.map
