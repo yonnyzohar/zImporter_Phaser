@@ -434,6 +434,14 @@ export class ZScene {
                     const inputData = childNode;
                     const textInput = new ZTextInput(this.phaserScene, inputData);
                     textInput.setName(inputData.name);
+                    // Expose currentTransform so ZContainer.setOrigin() uses the first branch
+                    // (childTransform.x - parentPivot) instead of the _baseX fallback.
+                    // Both portrait and landscape use the same leaf x/y (no orientation data
+                    // on inputField nodes), so we point both at the same object.
+                    const leafTransform = { x: inputData.x ?? 0, y: inputData.y ?? 0, pivotX: 0, pivotY: 0, scaleX: 1, scaleY: 1 };
+                    textInput.currentTransform = leafTransform;
+                    textInput.portrait = leafTransform;
+                    textInput.landscape = leafTransform;
                     mc[inputData.name] = textInput;
                     mc.add(textInput);
                     this.applyFilters(childNode, textInput);

@@ -353,16 +353,9 @@ export class ZContainer extends Phaser.GameObjects.Container {
                 }
             }
             else {
-                // Apply pivot to all non-ZContainer children AND to ZContainer subclasses
-                // (like ZTextInput) that have _baseX/_baseY but no currentTransform.
-                // Without this, their Phaser .x/.y stays at the JSON value and
-                // getWorldTransformMatrix() gives the wrong canvas position.
                 if (!(child instanceof ZContainer)) {
                     (child as any).setX(-pivotX);
                     (child as any).setY(-pivotY);
-                } else if ((child as any)._baseX !== undefined) {
-                    (child as any).setX((child as any)._baseX - pivotX);
-                    (child as any).setY((child as any)._baseY - pivotY);
                 }
             }
 
