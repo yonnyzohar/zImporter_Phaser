@@ -75,6 +75,9 @@ export class ZScroll extends ZContainer {
         this.msk.fillStyle(0xffffff, 1);
         this.msk.fillRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
         this.scrollContent.setMask(this.msk.createGeometryMask());
+        // Store the clip rect in Phaser world-space so ZTextInput descendants
+        // can apply a matching CSS clip-path to their DOM elements.
+        this._clipWorld = { tl: { x: tl.x, y: tl.y }, br: { x: br.x, y: br.y } };
         this.scrollContent.y = scy;
         this.beed.y = 0;
         this.addEventListeners();
