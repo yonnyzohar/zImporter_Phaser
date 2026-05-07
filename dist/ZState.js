@@ -50,7 +50,7 @@ export class ZState extends ZContainer {
                 chosenChild.parentContainer.bringToTop(chosenChild);
             }
             if (chosenChild instanceof ZTimeline) {
-                chosenChild.play();
+                chosenChild.gotoAndPlay(0);
             }
             if (chosenChild instanceof ZContainer) {
                 this.playSpines(chosenChild);
