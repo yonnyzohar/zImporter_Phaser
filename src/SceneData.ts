@@ -95,6 +95,7 @@ export interface InstanceData extends BaseAssetData {
   landscape: OrientationData;
   attrs?: InstanceAttributes;
   playOnStart?: boolean;
+  looping?: boolean;
 
 }
 
