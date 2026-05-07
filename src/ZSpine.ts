@@ -121,7 +121,7 @@ export class ZSpine {
 
             if (data.playOnStart?.value && data.playOnStart?.animation) {
                 try {
-                    spineObj.animationState.setAnimation(0, data.playOnStart.animation, true);
+                    spineObj.animationState.setAnimation(0, data.playOnStart.animation, data.playOnStart.loop);
                 } catch (_) { /* animation may not exist */ }
             }
 

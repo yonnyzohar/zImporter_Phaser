@@ -790,6 +790,7 @@ export class ZScene {
         const zSpine = new ZSpine(this.phaserScene, spineData, assetBasePath);
         zSpine.load((spineObj: SpineGameObject | undefined) => {
           if (spineObj) {
+            mc.setChilSpineData(spineData);
             spineObj.setName(spineData.name || childNode.name);
             mc.add(spineObj);
             (mc as any)[childNode.name] = spineObj;

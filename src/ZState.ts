@@ -38,6 +38,7 @@ export class ZState extends ZContainer {
             chosenChild = this.get("idle") as ZContainer;
             if (!chosenChild && this.list.length > 0) {
                 chosenChild = this.list[0] as ZContainer;
+                this.stopAllSpineAnims(chosenChild);
             }
         }
         if (this.list) {
@@ -46,6 +47,7 @@ export class ZState extends ZContainer {
                 (child as Phaser.GameObjects.Container).visible = false;
                 if (child instanceof ZTimeline) {
                     (child as ZTimeline).stop();
+                    this.stopAllSpineAnims(child);
                 }
             }
         }
@@ -58,9 +60,55 @@ export class ZState extends ZContainer {
             if (chosenChild instanceof ZTimeline) {
                 (chosenChild as ZTimeline).play();
             }
+            if (chosenChild instanceof ZContainer) {
+                this.playSpines(chosenChild);
+            }
             return chosenChild;
         }
         return null;
+    }
+
+    private playSpines(container: ZContainer): void {
+        let spine = container.getSpine();
+        if(spine && spine.state)
+        {   let spineData = container.getChildSpineData();
+             if(spineData.playOnStart && spineData.playOnStart.value){
+                 setTimeout(() => {
+                    spine!.animationState.setAnimation(0, spineData.playOnStart!.animation, spineData.playOnStart!.loop);
+                }, 0);   
+             }
+        }
+        else{
+            for (let i = 0; i < this.list.length; i++) {
+                let child = this.list[i];
+                if(child instanceof ZContainer){
+                    this.playSpines(child);
+                }
+            }
+        }
+        
+    }
+
+    private stopAllSpineAnims(container: ZContainer): void {
+        let spine = container.getSpine();
+        if(spine && spine.state)
+        {
+            spine.animationState.setEmptyAnimation(0, 0); // Sets empty (no animation) instantly
+            spine.animationState.clearTracks();           // Clears any animations after
+            spine.animationState.clearListeners();        // Optional: clears listeners
+            spine.skeleton.setToSetupPose();     // ✅ Reset bones/slots to initial frame
+            spine.update(0);
+
+        }
+        else{
+            for (let i = 0; i < this.list.length; i++) {
+                let child = this.list[i];
+                if(child instanceof ZContainer){
+                    this.stopAllSpineAnims(child);
+                }
+            }
+        }
+        
     }
 
     public getAllStateNames(): (string | null)[] {

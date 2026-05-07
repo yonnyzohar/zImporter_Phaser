@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { InstanceData } from "./SceneData";
+import { InstanceData, SpineData } from "./SceneData";
 import { OrientationData } from "./SceneData";
 import { ZScene } from "./ZScene";
 import { ZTimeline } from "./ZTimeline";
@@ -30,6 +30,16 @@ export class ZContainer extends Phaser.GameObjects.Container {
     private graphics?: Phaser.GameObjects.Graphics;
     _flashSkewX: number | undefined;
     _flashSkewY: number | undefined;
+
+    private childSpineData:SpineData;
+
+    public setChilSpineData(data: SpineData){
+        this.childSpineData = data;
+    }
+
+    public getChildSpineData(): SpineData{
+        return this.childSpineData;
+    }
 
     constructor(scene: Phaser.Scene, x = 0, y = 0, children?: Phaser.GameObjects.GameObject[]) {
         super(scene, x, y, children);
