@@ -12,6 +12,8 @@ export declare class ZState extends ZContainer {
     /** Alias for setViewState — matches PIXI ZState API */
     setState(str: string | number): this;
     setViewState(str: string): ZContainer | null;
+    private playSpines;
+    private stopAllSpineAnims;
     getAllStateNames(): (string | null)[];
     getType(): string;
 }

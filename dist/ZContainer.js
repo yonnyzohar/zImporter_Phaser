@@ -16,6 +16,13 @@ export class ZContainer extends Phaser.GameObjects.Container {
     graphics;
     _flashSkewX;
     _flashSkewY;
+    childSpineData;
+    setChilSpineData(data) {
+        this.childSpineData = data;
+    }
+    getChildSpineData() {
+        return this.childSpineData;
+    }
     constructor(scene, x = 0, y = 0, children) {
         super(scene, x, y, children);
         scene.add.existing(this);

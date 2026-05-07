@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { InstanceData } from "./SceneData";
+import { InstanceData, SpineData } from "./SceneData";
 import { OrientationData } from "./SceneData";
 import { SpineGameObject } from "@esotericsoftware/spine-phaser";
 export interface AnchorData {
@@ -26,6 +26,9 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     private graphics?;
     _flashSkewX: number | undefined;
     _flashSkewY: number | undefined;
+    private childSpineData;
+    setChilSpineData(data: SpineData): void;
+    getChildSpineData(): SpineData;
     constructor(scene: Phaser.Scene, x?: number, y?: number, children?: Phaser.GameObjects.GameObject[]);
     getChildByName(name: string): Phaser.GameObjects.GameObject | null;
     get(childName: string): ZContainer | null;
