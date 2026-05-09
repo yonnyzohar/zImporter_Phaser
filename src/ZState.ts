@@ -45,8 +45,8 @@ export class ZState extends ZContainer {
             for (let i = 0; i < this.list.length; i++) {
                 let child = this.list[i];
                 (child as Phaser.GameObjects.Container).visible = false;
-                if (child instanceof ZTimeline) {
-                    (child as ZTimeline).stop();
+                if (child instanceof ZContainer) {
+                    this.stopAllTimelines(child);
                     this.stopAllSpineAnims(child);
                 }
             }
@@ -57,15 +57,45 @@ export class ZState extends ZContainer {
             if (chosenChild.parentContainer) {
                 chosenChild.parentContainer.bringToTop(chosenChild);
             }
-            if (chosenChild instanceof ZTimeline) {
-                (chosenChild as ZTimeline).gotoAndPlay(0);
-            }
             if (chosenChild instanceof ZContainer) {
                 this.playSpines(chosenChild);
+                this.playAllTimelines(chosenChild);
             }
             return chosenChild;
         }
         return null;
+    }
+
+    private playAllTimelines(container: ZContainer): void {
+        if (container instanceof ZTimeline) {
+            let t = container as ZTimeline;
+            t.gotoAndPlay(0);
+        }
+        else{
+            for(let i = 0; i < container.list.length; i++){
+                let child = container.list[i];
+                if(child instanceof ZContainer){
+                    this.playAllTimelines(child);
+                }
+            }
+        }
+        
+    }
+
+    private stopAllTimelines(container: ZContainer): void {
+        if (container instanceof ZTimeline) {
+            let t = container as ZTimeline;
+            t.stop();
+        }
+        else{
+            for(let i = 0; i < container.list.length; i++){
+                let child = container.list[i];
+                if(child instanceof ZContainer){
+                    this.stopAllTimelines(child);
+                }
+            }
+        }
+        
     }
 
     private playSpines(container: ZContainer): void {
@@ -79,8 +109,8 @@ export class ZState extends ZContainer {
              }
         }
         else{
-            for (let i = 0; i < this.list.length; i++) {
-                let child = this.list[i];
+            for (let i = 0; i < container.list.length; i++) {
+                let child = container.list[i];
                 if(child instanceof ZContainer){
                     this.playSpines(child);
                 }
@@ -101,8 +131,8 @@ export class ZState extends ZContainer {
 
         }
         else{
-            for (let i = 0; i < this.list.length; i++) {
-                let child = this.list[i];
+            for (let i = 0; i < container.list.length; i++) {
+                let child = container.list[i];
                 if(child instanceof ZContainer){
                     this.stopAllSpineAnims(child);
                 }

@@ -37,8 +37,8 @@ export class ZState extends ZContainer {
             for (let i = 0; i < this.list.length; i++) {
                 let child = this.list[i];
                 child.visible = false;
-                if (child instanceof ZTimeline) {
-                    child.stop();
+                if (child instanceof ZContainer) {
+                    this.stopAllTimelines(child);
                     this.stopAllSpineAnims(child);
                 }
             }
@@ -49,15 +49,41 @@ export class ZState extends ZContainer {
             if (chosenChild.parentContainer) {
                 chosenChild.parentContainer.bringToTop(chosenChild);
             }
-            if (chosenChild instanceof ZTimeline) {
-                chosenChild.gotoAndPlay(0);
-            }
             if (chosenChild instanceof ZContainer) {
                 this.playSpines(chosenChild);
+                this.playAllTimelines(chosenChild);
             }
             return chosenChild;
         }
         return null;
+    }
+    playAllTimelines(container) {
+        if (container instanceof ZTimeline) {
+            let t = container;
+            t.gotoAndPlay(0);
+        }
+        else {
+            for (let i = 0; i < container.list.length; i++) {
+                let child = container.list[i];
+                if (child instanceof ZContainer) {
+                    this.playAllTimelines(child);
+                }
+            }
+        }
+    }
+    stopAllTimelines(container) {
+        if (container instanceof ZTimeline) {
+            let t = container;
+            t.stop();
+        }
+        else {
+            for (let i = 0; i < container.list.length; i++) {
+                let child = container.list[i];
+                if (child instanceof ZContainer) {
+                    this.stopAllTimelines(child);
+                }
+            }
+        }
     }
     playSpines(container) {
         let spine = container.getSpine();
@@ -70,8 +96,8 @@ export class ZState extends ZContainer {
             }
         }
         else {
-            for (let i = 0; i < this.list.length; i++) {
-                let child = this.list[i];
+            for (let i = 0; i < container.list.length; i++) {
+                let child = container.list[i];
                 if (child instanceof ZContainer) {
                     this.playSpines(child);
                 }
@@ -88,8 +114,8 @@ export class ZState extends ZContainer {
             spine.update(0);
         }
         else {
-            for (let i = 0; i < this.list.length; i++) {
-                let child = this.list[i];
+            for (let i = 0; i < container.list.length; i++) {
+                let child = container.list[i];
                 if (child instanceof ZContainer) {
                     this.stopAllSpineAnims(child);
                 }
