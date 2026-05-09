@@ -24,6 +24,8 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     fixedBoxSize?: boolean;
     _props?: any;
     private graphics?;
+    private _maskSiblingName?;
+    private _maskGraphics?;
     _flashSkewX: number | undefined;
     _flashSkewY: number | undefined;
     private childSpineData;
@@ -46,12 +48,15 @@ export declare class ZContainer extends Phaser.GameObjects.Container {
     private resizeText;
     getTextField(): Phaser.GameObjects.Text | Phaser.GameObjects.BitmapText | null;
     setInstanceData(data: InstanceData, orientation: string): void;
+    private addMask;
+    private applyMask;
     setFixedBoxSize(value: boolean): void;
     set fitToScreen(value: boolean);
     get fitToScreen(): boolean;
     applyTransform(): void;
     setOrigin(): void;
     resize(width: number, height: number, orientation: "portrait" | "landscape"): void;
+    private computeContentBounds;
     executeFitToScreen(): void;
     /**
      * Internal helper — sets the raw Phaser display position without touching

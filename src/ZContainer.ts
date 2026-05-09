@@ -28,6 +28,8 @@ export class ZContainer extends Phaser.GameObjects.Container {
     fixedBoxSize?: boolean;
     _props?: any;
     private graphics?: Phaser.GameObjects.Graphics;
+    private _maskSiblingName?: string;
+    private _maskGraphics?: Phaser.GameObjects.Graphics;
     _flashSkewX: number | undefined;
     _flashSkewY: number | undefined;
 
@@ -254,6 +256,40 @@ export class ZContainer extends Phaser.GameObjects.Container {
                 this.originalFontSize = fs !== undefined ? parseFloat(fs as string) : undefined;
             }
         }
+
+        //at this moment the sybling that is masking may not be created yet. so wait. yes it's a hack for now...
+        if (data.mask) {
+            this.addMask(data.mask,0);
+
+        }
+    }
+
+    private addMask(mskName: string, retry: number): void {
+        if (retry >= 3) return;
+        setTimeout(() => {
+            const sybling = this.parentContainer?.getByName(mskName);
+            if (sybling) {
+                this._maskSiblingName = mskName;
+                (sybling as ZContainer).setVisible(false);
+                this.applyMask();
+            } else {
+                this.addMask(mskName, retry + 1);
+            }
+        }, 50);
+    }
+
+    private applyMask(): void {
+        if (!this._maskSiblingName || !this.parentContainer) return;
+        const sybling = this.parentContainer.getByName(this._maskSiblingName) as Phaser.GameObjects.Container;
+        if (!sybling) return;
+        const bounds = sybling.getBounds();
+        if (!this._maskGraphics) {
+            this._maskGraphics = new Phaser.GameObjects.Graphics(this.scene);
+            this.mask = this._maskGraphics.createGeometryMask();
+        }
+        this._maskGraphics.clear();
+        this._maskGraphics.fillStyle(0xffffff);
+        this._maskGraphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
     public setFixedBoxSize(value: boolean): void {
@@ -325,6 +361,8 @@ export class ZContainer extends Phaser.GameObjects.Container {
         this.setOrigin();
 
         this.applyAnchor();
+
+        this.applyMask();
         /*
         if (!this.graphics) {
             this.graphics = this.scene.add.graphics();
@@ -377,6 +415,36 @@ export class ZContainer extends Phaser.GameObjects.Container {
         this.applyTransform();
     }
 
+    private computeContentBounds(container: Phaser.GameObjects.Container): { minX: number, minY: number, maxX: number, maxY: number } {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const child of container.list) {
+            const c = child as any;
+            const dw: number = c.displayWidth ?? c.width ?? 0;
+            const dh: number = c.displayHeight ?? c.height ?? 0;
+            if (dw === 0 && dh === 0) {
+                if (child instanceof Phaser.GameObjects.Container) {
+                    const inner = this.computeContentBounds(child as Phaser.GameObjects.Container);
+                    if (isFinite(inner.minX)) {
+                        const sx: number = c.scaleX ?? 1;
+                        const sy: number = c.scaleY ?? 1;
+                        minX = Math.min(minX, c.x + inner.minX * sx);
+                        minY = Math.min(minY, c.y + inner.minY * sy);
+                        maxX = Math.max(maxX, c.x + inner.maxX * sx);
+                        maxY = Math.max(maxY, c.y + inner.maxY * sy);
+                    }
+                }
+                continue;
+            }
+            const ox: number = (c.originX ?? 0) * dw;
+            const oy: number = (c.originY ?? 0) * dh;
+            minX = Math.min(minX, c.x - ox);
+            minY = Math.min(minY, c.y - oy);
+            maxX = Math.max(maxX, c.x - ox + dw);
+            maxY = Math.max(maxY, c.y - oy + dh);
+        }
+        return { minX, minY, maxX, maxY };
+    }
+
     executeFitToScreen() {
         if (this.list.length === 0) return;
 
@@ -411,23 +479,9 @@ export class ZContainer extends Phaser.GameObjects.Container {
             return;
         }
 
-        // Compute content bounds directly from children's local properties,
-        // avoiding getBounds() which requires up-to-date world transforms.
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const child of this.list) {
-            const c = child as any;
-            const dw: number = c.displayWidth ?? c.width ?? 0;
-            const dh: number = c.displayHeight ?? c.height ?? 0;
-            if (dw === 0 && dh === 0) continue;
-            const ox: number = (c.originX ?? 0) * dw;
-            const oy: number = (c.originY ?? 0) * dh;
-            const cx: number = (c.x ?? 0) - ox;
-            const cy: number = (c.y ?? 0) - oy;
-            minX = Math.min(minX, cx);
-            minY = Math.min(minY, cy);
-            maxX = Math.max(maxX, cx + dw);
-            maxY = Math.max(maxY, cy + dh);
-        }
+        // Compute content bounds in this container's local space, recursing into
+        // sub-containers that have no intrinsic size (e.g. ZContainers).
+        const { minX, minY, maxX, maxY } = this.computeContentBounds(this);
 
         if (!isFinite(minX) || !isFinite(minY)) return;
 

@@ -29,7 +29,7 @@
         // Example JSON path (adjust as needed)
         //
 
-        let sceneJsonPath = "./assets/autoPlay/";
+        let sceneJsonPath = "./assets/aaaaaa/";
 
         // Define a Phaser scene that will use ZScene
         class MyPhaserScene extends Phaser.Scene {
@@ -52,13 +52,6 @@
                 this.zScene.load(sceneJsonPath, () => {
                     // After loading, add objects to this Phaser scene
                     this.zScene.loadStage(this);
-
-                    let stage = this.zScene.sceneStage;
-                    for (const child of stage.list) {
-                        if (child instanceof zimporter.ZTimeline) {
-                            child.play();
-                        }
-                    }
                 });
             }
 
