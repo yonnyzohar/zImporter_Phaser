@@ -4,7 +4,7 @@
   "description": "A TypeScript library for importing and managing zStudio scenes in Phaser applications.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "repository": "https://github.com/yonnyzohar/zImporter_Phaser",
+  "repository": "https://github.com/zStudiosLTD/zImporter_Phaser",
   "homepage": "https://zstudiosltd.com/",
   "scripts": {
     "build": "tsc",
