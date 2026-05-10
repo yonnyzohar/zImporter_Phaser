@@ -69,7 +69,10 @@ export class ZState extends ZContainer {
     private playAllTimelines(container: ZContainer): void {
         if (container instanceof ZTimeline) {
             let t = container as ZTimeline;
-            t.gotoAndPlay(0);
+            if(t.playOnStart)
+            {
+                t.gotoAndPlay(0);
+            }
         }
         else{
             for(let i = 0; i < container.list.length; i++){
