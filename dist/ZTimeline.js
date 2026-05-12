@@ -158,32 +158,53 @@ export class ZTimeline extends ZContainer {
                         }
                         if (frame.scaleX !== undefined) {
                             child.scaleX = frame.scaleX;
+                            if (child.currentTransform)
+                                child.currentTransform.scaleX = frame.scaleX;
                         }
                         if (frame.scaleY !== undefined) {
                             child.scaleY = frame.scaleY;
+                            if (child.currentTransform)
+                                child.currentTransform.scaleY = frame.scaleY;
                         }
                         // frame.x/y are in the parent's pivot-space (same as PIXI data).
                         // Phaser simulates pivot by offsetting children, so subtract this
                         // timeline's pivot to get the Phaser container's actual local position.
+                        // Also store the logical position in currentTransform so that a window
+                        // resize (which calls applyTransform on children from resizeMap) re-applies
+                        // the animated value rather than reverting to the design-time position.
+                        // This mirrors PIXI's ZContainer where the `set x` setter keeps
+                        // currentTransform.x in sync automatically.
                         if (frame.x !== undefined) {
                             child.x = frame.x - myPivotX;
+                            if (child.currentTransform)
+                                child.currentTransform.x = frame.x;
                         }
                         if (frame.y !== undefined) {
                             child.y = frame.y - myPivotY;
+                            if (child.currentTransform)
+                                child.currentTransform.y = frame.y;
                         }
                         if (frame.alpha !== undefined) {
                             child.alpha = frame.alpha;
+                            if (child.currentTransform)
+                                child.currentTransform.alpha = frame.alpha;
                         }
                         if (frame.rotation !== undefined) {
                             child.rotation = frame.rotation;
+                            if (child.currentTransform)
+                                child.currentTransform.rotation = frame.rotation;
                         }
                         // Apply Flash-style skew using the raw Flash skewY / skewX values.
                         // The ZContainer localTransform patch converts these to the correct matrix.
                         if (frame.skewY !== undefined) {
                             child._flashSkewY = frame.skewY;
+                            if (child.currentTransform)
+                                child.currentTransform.skewY = frame.skewY;
                         }
                         if (frame.skewX !== undefined) {
                             child._flashSkewX = frame.skewX;
+                            if (child.currentTransform)
+                                child.currentTransform.skewX = frame.skewX;
                         }
                         // Re-apply pivot simulation for ZContainer children so their
                         // own children are repositioned when pivot changes.

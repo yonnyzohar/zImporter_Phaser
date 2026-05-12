@@ -318,9 +318,9 @@ export class ZContainer extends Phaser.GameObjects.Container {
         if (!this.currentTransform) return;
         if (!this.resizeable) return;
         if (this.parentContainer) {
-            let currentFrame = (this.parentContainer as any).currentFrame;
-            if (currentFrame !== undefined && currentFrame > 0) {
-                return; // do not apply transform if parent timeline is playing
+            const parentFrames = (this.parentContainer as any)._frames;
+            if (parentFrames != null && parentFrames[this.name] != null) {
+                return; // animated by parent timeline — gotoAndStop handles positioning
             }
         }
 
