@@ -118,6 +118,18 @@ export class ZTimeline extends ZContainer {
             }
         }
     }
+    // Override setOrigin so that a resize doesn't reset children back to their
+    // authored initial positions. When this timeline has frame data, re-apply the
+    // current animation frame instead — gotoAndStop reads the already-updated
+    // currentTransform.pivotX/Y, so pivot offsets remain correct for the new size.
+    setOrigin() {
+        if (this._frames != null) {
+            this.gotoAndStop(this.currentFrame);
+        }
+        else {
+            super.setOrigin();
+        }
+    }
     destroy() {
         this.stop();
         ZUpdatables.removeUpdateAble(this);

@@ -40,6 +40,7 @@ export declare class ZTimeline extends ZContainer {
     stop(): void;
     gotoAndPlay(frameNum: number): void;
     update(): void;
+    setOrigin(): void;
     destroy(): void;
     gotoAndStop(frameNum: number): void;
 }
